@@ -12,7 +12,8 @@ check_eq "$A 只看到自己的节点" "$(tk "$A" get nodes -o jsonpath='{.items
 check_eq "$B 只看到自己的节点" "$(tk "$B" get nodes -o jsonpath='{.items[*].metadata.name}')" tenant-b-worker
 check "$A 能看到 gpu-share-1" tk "$A" get pod gpu-share-1
 check "$B 的 API 可访问" tk "$B" get --raw /readyz
-if fetch b_pods "$B" get pods -A; then
+if fetch_json b_pods "$B" get pods -A; then
+  jq -r '.items[] | "\(.metadata.namespace)/\(.metadata.name)"' <<<"$b_pods"
   check_eq "$B 看不到 $A 的 gpu-* Pod" "$(jq '[.items[].metadata.name | select(test("gpu-"))] | length' <<<"$b_pods")" 0
 fi
 check_eq "$A nvidia.com/gpu" "$(tk "$A" get node tenant-a-worker -o jsonpath='{.status.allocatable.nvidia\.com/gpu}')" 10

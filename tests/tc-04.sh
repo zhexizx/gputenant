@@ -11,10 +11,11 @@ for i in 1 2 3; do
   check "gpu-share-$i 有分配注解" test -n "$alloc"
 done
 printf '\n$ 节点上的 mutex/lock 注解（应该为空）\n'
-if fetch node_json "$A" get node "$NODE_A"; then
+if fetch_json node_json "$A" get node "$NODE_A"; then
   if locks=$(jq -r '(.metadata.annotations // {}) | keys[] | select(test("mutex|lock"))' <<<"$node_json"); then
     echo "${locks:-<无>}"
-    check_eq "节点锁已释放，且没有手动解锁" "$locks" ""
+    # 只能证明现在没有锁注解。测试本身不会手动解锁，但这项检查证明不了“没有人手动解锁过”。
+    check_eq "节点上没有残留的锁注解" "$locks" ""
   else
     fail "解析节点注解"
   fi

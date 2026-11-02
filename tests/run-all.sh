@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# 跑 TC-01~08，结果写到 results/<时间>/，只根据每个 TC 的退出码生成 summary.md。
-# 用法: run-all.sh [01 02 ...]（默认全部）
+# 跑 TC-00~08，结果写到 results/<时间>/。退出码为 0 且日志里有 RESULT ... PASS，才算通过。
+# TC-00 是测试框架自检，不需要集群。用法: run-all.sh [00 01 ...]（默认全部）
 source "$(dirname "$0")/lib.sh"
 RUN_DIR="$ROOT/results/$(date +%Y%m%d-%H%M%S)"; export RUN_DIR
 mkdir -p "$RUN_DIR"
-ids=("$@"); ((${#ids[@]})) || ids=(01 02 03 04 05 06 07 08)
+ids=("$@"); ((${#ids[@]})) || ids=(00 01 02 03 04 05 06 07 08)
+
+# 记录测试用的代码版本；工作区有未提交的改动时标记 -dirty。
+commit=$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)
+[[ -n "$(git -C "$ROOT" status --porcelain -- scripts tests manifests 2>/dev/null)" ]] && commit="$commit-dirty"
 
 # 每次从干净状态开始，避免上一轮的 Pod 让测试假通过。
 if tk "$A" get --raw /readyz >/dev/null 2>&1; then
@@ -13,6 +17,7 @@ fi
 
 {
   echo "# TC 结果 $(basename "$RUN_DIR")"; echo
+  echo "代码版本：\`$commit\`"; echo
   echo "| TC | 结论 | 说明 |"; echo "|---|---|---|"
 } > "$RUN_DIR/summary.md"
 overall=0

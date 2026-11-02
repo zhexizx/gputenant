@@ -10,10 +10,6 @@ wait_event gpu-mem-big 'CardInsufficientMemory|FailedScheduling' 60
 sleep 20
 run tk "$A" get pod gpu-mem-big -o wide
 tk "$A" describe pod gpu-mem-big | sed -n '/Events/,$p'
-if fetch pod_json "$A" get pod gpu-mem-big; then
-  check_eq "schedulerName" "$(jq -r .spec.schedulerName <<<"$pod_json")" hami-scheduler
-  check_eq "没有被调度" "$(jq -r '.spec.nodeName // ""' <<<"$pod_json")" ""
-  check_eq "phase" "$(jq -r .status.phase <<<"$pod_json")" Pending
-fi
+check_pending_on_hami gpu-mem-big
 check "事件包含 CardInsufficientMemory" wait_event gpu-mem-big 'CardInsufficientMemory' 5
 tc_end

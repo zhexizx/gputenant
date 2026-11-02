@@ -9,10 +9,6 @@ wait_event gpu-share-4 'CardInsufficient|FilteringFailed|FailedScheduling' 60
 sleep 20
 run tk "$A" get pod gpu-share-4 -o wide
 tk "$A" describe pod gpu-share-4 | sed -n '/Events/,$p'
-if fetch pod_json "$A" get pod gpu-share-4; then
-  check_eq "schedulerName" "$(jq -r .spec.schedulerName <<<"$pod_json")" hami-scheduler
-  check_eq "没有被调度" "$(jq -r '.spec.nodeName // ""' <<<"$pod_json")" ""
-  check_eq "phase" "$(jq -r .status.phase <<<"$pod_json")" Pending
-fi
+check_pending_on_hami gpu-share-4
 check "事件给出算力不足的原因" wait_event gpu-share-4 'CardInsufficientCore|CardComputeUnitsExhausted' 5
 tc_end

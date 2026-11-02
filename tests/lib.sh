@@ -28,16 +28,40 @@ check() { local d="$1"; shift; if "$@" >/dev/null 2>&1; then pass "$d"; else fai
 check_eq() {
   if [[ "$2" == "$3" ]]; then pass "$1 (= $3)"; else fail "$1: 实际 '$2'，期望 '$3'"; fi
 }
-# fetch <变量名> <租户> <kubectl 参数...>：把 -o json 的结果存进变量。kubectl 失败就记一次 FAIL 并返回 1。
+# fetch_json <变量名> <租户> <kubectl 参数...>：执行 kubectl ... -o json，把 stdout 存进变量。
+# kubectl 失败或 stdout 不是合法 JSON，就记一次 FAIL 并返回 1。
 # 期望值为空的检查必须先用它取数据，否则 API 不通时空输出也会被判为通过。
-fetch() {
-  local __var="$1" __t="$2" __out; shift 2
-  if __out=$(tk "$__t" "$@" -o json 2>&1); then
-    printf -v "$__var" '%s' "$__out"
-  else
-    fail "kubectl $*: $(head -c 200 <<<"$__out")"
+# 只取 stdout：stderr（包括成功时的警告）直接写进日志，不混进 JSON。
+fetch_json() {
+  local __var="$1" __t="$2" __out __rc; shift 2
+  printf '\n$ kubectl %s -o json\n' "$*"
+  __out=$(tk "$__t" "$@" -o json); __rc=$?
+  if ((__rc != 0)); then
+    fail "kubectl $* 失败（rc=$__rc，错误见上方输出）"
     return 1
   fi
+  if ! jq -e . >/dev/null 2>&1 <<<"$__out"; then
+    fail "kubectl $* 的输出不是合法 JSON: $(head -c 200 <<<"$__out")"
+    return 1
+  fi
+  echo "（${#__out} 字节 JSON，已校验）"
+  printf -v "$__var" '%s' "$__out"
+}
+# check_pending_on_hami <pod>：Pod 由 hami-scheduler 处理，没有被调度，phase 是 Pending。
+# 取数据失败返回 1；否则 3 项检查都会执行，返回 0。
+check_pending_on_hami() {
+  local pod="$1" json sched node phase
+  fetch_json json "$A" get pod "$pod" || return 1
+  if ! { sched=$(jq -er '.spec.schedulerName' <<<"$json") &&
+         node=$(jq -er '.spec.nodeName // ""' <<<"$json") &&
+         phase=$(jq -er '.status.phase' <<<"$json"); }; then
+    fail "解析 $pod 的 schedulerName、nodeName、phase"
+    return 1
+  fi
+  check_eq "$pod schedulerName" "$sched" hami-scheduler
+  check_eq "$pod 没有被调度" "$node" ""
+  check_eq "$pod phase" "$phase" Pending
+  return 0
 }
 tc_end() {
   local verdict=PASS
