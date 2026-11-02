@@ -11,7 +11,12 @@ for i in 1 2 3; do
   check "gpu-share-$i 有分配注解" test -n "$alloc"
 done
 printf '\n$ 节点上的 mutex/lock 注解（应该为空）\n'
-locks=$(tk "$A" get node "$NODE_A" -o json | jq -r '.metadata.annotations | keys[] | select(test("mutex|lock"))')
-echo "${locks:-<无>}"
-check_eq "节点锁已释放，且没有手动解锁" "$locks" ""
+if fetch node_json "$A" get node "$NODE_A"; then
+  if locks=$(jq -r '(.metadata.annotations // {}) | keys[] | select(test("mutex|lock"))' <<<"$node_json"); then
+    echo "${locks:-<无>}"
+    check_eq "节点锁已释放，且没有手动解锁" "$locks" ""
+  else
+    fail "解析节点注解"
+  fi
+fi
 tc_end

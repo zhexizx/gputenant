@@ -1,12 +1,12 @@
 
-[16:39:46] 触发 reconcile 并重启 kube-proxy
+[20:45:30] 触发 reconcile 并重启 kube-proxy
 tenantcontrolplane.kamaji.clastix.io/tenant-a annotated
 daemonset.apps/lab-kube-proxy restarted
 ok: kube-proxy 重启后稳定
 ok:   ClusterIP 规则存在
 ok:   没有 Kamaji 管理的 kube-proxy
 
-[16:40:37] 实际效果
+[20:46:21] 实际效果
 ok:   API 可访问
 ok:   节点 Ready
 ok:   nvidia.com/gpu=10
@@ -18,8 +18,8 @@ vgpu-monitor docker.io/library/hami:local
 vgpu-scheduler-extender docker.io/library/hami:local
 ok:   HAMi 在用本地镜像
 
-[16:40:39] 版本记录
-# 2026-11-02T16:40:39+11:00
+[20:46:22] 版本记录
+# 2026-11-02T20:46:22+11:00
 HAMi 2b8f4e29c48bca376d4f6123d7c6ae7627aef579
 k8s-test-infra e7f2320c95bef01ddde12fb8c493019a558e8f43
 nvml-mock chart 0.6.0

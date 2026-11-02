@@ -1,0 +1,41 @@
+# TC-02: 节点和 Konnectivity 隧道（tenant-a）
+# 开始: 2026-11-02T20:49:29+11:00
+
+$ tk tenant-a get nodes -o wide
+NAME              STATUS   ROLES    AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                             CONTAINER-RUNTIME
+tenant-a-worker   Ready    <none>   5m58s   v1.36.4   172.18.0.5    <none>        Debian GNU/Linux 13 (trixie)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+$ tk tenant-a -n kube-system get pods
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-5b84fd7749-vsq7z   1/1     Running   0          5m48s
+calico-node-764l2                          1/1     Running   0          5m48s
+coredns-695c5d47b8-2v72p                   1/1     Running   0          6m17s
+coredns-695c5d47b8-hx6v6                   1/1     Running   0          6m17s
+hami-device-plugin-x9phj                   2/2     Running   0          4m9s
+hami-scheduler-cccd69798-mzvb4             2/2     Running   0          4m17s
+konnectivity-agent-p7dg5                   1/1     Running   0          5m39s
+lab-kube-proxy-d89bj                       1/1     Running   0          3m28s
+
+$ tk tenant-a get mutatingwebhookconfigurations
+NAME           WEBHOOKS   AGE
+hami-webhook   1          4m17s
+    name: hami-webhook
+        name: hami-scheduler
+    failurePolicy: Ignore
+    name: vgpu.hami.io
+    timeoutSeconds: 10
+CHECK PASS: 节点 Ready (= True)
+CHECK PASS: konnectivity-agent Ready (= 1)
+
+$ kubectl -n kube-system logs ds/konnectivity-agent --tail=5
+I1102 09:49:30.611267       1 client.go:373] "[tracing] recv packet" type="DATA"
+I1102 09:49:30.611281       1 client.go:485] "received DATA" connectionID=3
+I1102 09:49:30.611326       1 client.go:611] "write to remote" connectionID=3 lastData=1178 dataSize=1178
+I1102 09:49:30.611459       1 client.go:611] "write to remote" connectionID=3 lastData=200 dataSize=200
+I1102 09:49:30.612045       1 client.go:554] "received data from remote" bytes=106 connectionID=3
+CHECK PASS: 经隧道读取节点日志
+CHECK PASS: hami-webhook 已注册
+failurePolicy=Ignore
+
+# 结束: 2026-11-02T20:49:31+11:00
+RESULT TC-02 PASS (4 checks, 0 failed)
