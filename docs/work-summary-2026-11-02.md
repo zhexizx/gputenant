@@ -5,6 +5,7 @@
 ## 当前状态
 
 - 用当前脚本删除环境、从零重建后，TC-01~08 全部通过，结果见 `results/20261102-204926/`，环境日志在 `results/env/`。
+- 第二次审查修复后，在同一环境上重跑 TC-00~08，全部通过，结果见 `results/20261102-210512/`，代码版本 `79a2b37`。这次修改的只有测试脚本，环境脚本没变，所以没有从零重建。
 - 测试范围：TC-02~07 只在 tenant-a 上运行；tenant-b 由 TC-01、TC-08 和 `scripts/04-verify-env.sh tenant-b` 验证。
 - `up.sh`、`down.sh`、`verify-from-scratch.sh` 都实际运行过。
 - 预防措施已加到脚本，总计划附录已更新。
@@ -49,10 +50,11 @@ Kamaji chart 存在 `manifests/charts/` 并校验 sha256，镜像固定为 `sha2
 
 | TC | 内容 | 结论 |
 |---|---|---|
+| TC-00 | 测试框架自检，不依赖集群 | PASS |
 | TC-01 | 控制面和 API 地址 | PASS |
 | TC-02 | 节点和 Konnectivity 隧道 | PASS |
 | TC-03 | webhook 把 GPU Pod 交给 `hami-scheduler` | PASS |
-| TC-04 | 分配和绑定完成，节点锁自动释放 | PASS |
+| TC-04 | 分配和绑定完成，节点上没有残留的锁注解 | PASS |
 | TC-05 | 3 个 Pod 共享同一张卡 | PASS |
 | TC-06 | 算力超分被拒绝（`CardInsufficientCore`） | PASS |
 | TC-07 | 显存超分被拒绝（`CardInsufficientMemory`） | PASS |
@@ -66,15 +68,20 @@ Kamaji chart 存在 `manifests/charts/` 并校验 sha256，镜像固定为 `sha2
 |---|---|---|
 | `results/20261102-160456/` | tenant-a，调度器有故障 | TC-01、02 通过，TC-03 失败，TC-04 运行中被手动停止 |
 | `results/20261102-161625/` | 修复后的 tenant-a | TC-01~07 通过 |
-| `results/20261102-161915/` | 两个租户 | TC-01~08 通过 |
+| `results/20261102-161915/` | 加入 tenant-b（TC-01、TC-08 涉及它，TC-02~07 只在 tenant-a 上运行） | TC-01~08 通过 |
 | `results/20261102-162928/` | 从零重建 | TC-01~08 通过 |
 | `results/20261102-164334/` | 加入预防措施后从零重建 | TC-01~08 通过 |
 | `results/20261102-170927/` | 修改 TC-06、07 后只重跑这两项 | TC-06、07 通过 |
 | `results/20261102-204926/` | 按代码审查修复后从零重建 | TC-01~08 通过 |
+| `results/20261102-210512/` | 第二次审查修复后，同一环境重跑（`79a2b37`） | TC-00~08 通过 |
 
 代码审查后的修复：
 
-- TC-04、06、07、08 里期望值为空或为 0 的检查，改为先用 `fetch` 取数据。kubectl 失败时直接判为 FAIL，不会因为输出为空而误判通过。已用不存在的 Pod 和不通的 API 做过反向测试。
+- TC-04、06、07、08 里期望值为空或为 0 的检查，改为先用 `fetch_json` 取数据。kubectl 失败或输出不是合法 JSON 时直接判为 FAIL，不会因为输出为空而误判通过。
+- `fetch_json` 只取 stdout，stderr（包括成功时的警告）直接写进日志，不混进 JSON。第一版 `fetch` 用了 `2>&1`，kubectl 成功时只要往 stderr 打了警告，JSON 就会被污染。
+- TC-06、07 共用 `check_pending_on_hami`。TC-04 的检查名改为“节点上没有残留的锁注解”：它只能证明现在没有锁注解，证明不了没有人手动解锁过。
+- 反向测试写成 TC-00，用假的 kubectl 覆盖 7 个场景，不需要集群。把 `2>&1` 改回去做变异测试时，“stderr 有警告”这一项会失败，说明自检能发现这个问题。
+- `run-all.sh` 在 summary 里记录代码版本，工作区有未提交的改动时标记 `-dirty`。
 - `03-tenant-worker.sh` 对 `migStrategy` 加了断言，不是 `none` 就失败；两个租户的日志里都有 `ok: device-plugin 的 migStrategy 是 none`。
 
 ## 解决的问题

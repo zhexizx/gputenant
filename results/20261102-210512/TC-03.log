@@ -1,0 +1,20 @@
+# TC-03: webhook 把 GPU Pod 交给 hami-scheduler
+# 开始: 2026-11-02T21:05:51+11:00
+pod/gpu-share-1 created
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+pod/gpu-share-2 created
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+pod/gpu-share-3 created
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+CHECK PASS: gpu-share-1 schedulerName (= hami-scheduler)
+CHECK PASS: gpu-share-2 schedulerName (= hami-scheduler)
+CHECK PASS: gpu-share-3 schedulerName (= hami-scheduler)
+
+# 结束: 2026-11-02T21:05:58+11:00
+RESULT TC-03 PASS (3 checks, 0 failed)
