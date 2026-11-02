@@ -1,0 +1,20 @@
+# TC-03: webhook 把 GPU Pod 交给 hami-scheduler
+# 开始: 2026-11-02T16:05:01+11:00
+pod/gpu-share-1 created
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=180s
+error: timed out waiting for the condition on pods/gpu-share-1
+pod/gpu-share-2 created
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=180s
+error: timed out waiting for the condition on pods/gpu-share-2
+pod/gpu-share-3 created
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=180s
+error: timed out waiting for the condition on pods/gpu-share-3
+CHECK FAIL: gpu-share-1 schedulerName: 实际 'default-scheduler'，期望 'hami-scheduler'
+CHECK FAIL: gpu-share-2 schedulerName: 实际 'default-scheduler'，期望 'hami-scheduler'
+CHECK FAIL: gpu-share-3 schedulerName: 实际 'default-scheduler'，期望 'hami-scheduler'
+
+# 结束: 2026-11-02T16:14:03+11:00
+RESULT TC-03 FAIL (3 checks, 3 failed)

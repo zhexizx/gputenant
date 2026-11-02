@@ -1,0 +1,143 @@
+
+[16:37:46] 工作节点 tenant-a-worker
+ok: tenant-a-worker systemd 启动
+节点 swap=4194304kB，kubelet failSwapOn=false
+[preflight] Running pre-flight checks
+	[WARNING Swap]: swap is supported for cgroup v2 only. The kubelet must be properly configured to use swap. Please refer to https://kubernetes.io/docs/concepts/architecture/nodes/#swap-memory, or disable swap on the node
+[preflight] Reading configuration from the "kubeadm-config" ConfigMap in namespace "kube-system"...
+[preflight] Use 'kubeadm init phase upload-config kubeadm --config your-config-file' to re-upload it.
+W1102 05:37:54.503381     221 configset.go:77] Warning: No kubeproxy.config.k8s.io/v1alpha1 config is loaded. Continuing without it: configmaps "kube-proxy" is forbidden: User "system:bootstrap:mmy0wk" cannot get resource "configmaps" in API group "" in the namespace "kube-system"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/instance-config.yaml"
+[patches] Applied patch of type "application/strategic-merge-patch+json" to target "kubeletconfiguration"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Starting the kubelet
+[kubelet-check] Waiting for a healthy kubelet at http://127.0.0.1:10248/healthz. This can take up to 4m0s
+[kubelet-check] The kubelet is healthy after 501.434791ms
+[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
+
+ok: tenant-a-worker 已注册
+
+[16:37:55] kube-proxy（自管，--conntrack-max-per-core=0）
+serviceaccount/lab-kube-proxy created
+clusterrolebinding.rbac.authorization.k8s.io/lab-kube-proxy created
+daemonset.apps/lab-kube-proxy created
+ok: kube-proxy 规则已写入
+
+[16:38:01] Calico v3.31.2
+            - name: CALICO_IPV4POOL_CIDR
+              value: "10.244.0.0/16"
+poddisruptionbudget.policy/calico-kube-controllers created
+serviceaccount/calico-kube-controllers created
+serviceaccount/calico-node created
+serviceaccount/calico-cni-plugin created
+configmap/calico-config created
+customresourcedefinition.apiextensions.k8s.io/bgpconfigurations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/bgpfilters.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/bgppeers.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/blockaffinities.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/caliconodestatuses.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/clusterinformations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/felixconfigurations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/globalnetworkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/globalnetworksets.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/hostendpoints.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipamblocks.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipamconfigs.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipamhandles.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ippools.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipreservations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/kubecontrollersconfigurations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/networkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/networksets.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/stagedglobalnetworkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/stagedkubernetesnetworkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/stagednetworkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/tiers.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/adminnetworkpolicies.policy.networking.k8s.io created
+customresourcedefinition.apiextensions.k8s.io/baselineadminnetworkpolicies.policy.networking.k8s.io created
+clusterrole.rbac.authorization.k8s.io/calico-kube-controllers created
+clusterrole.rbac.authorization.k8s.io/calico-node created
+clusterrole.rbac.authorization.k8s.io/calico-cni-plugin created
+clusterrole.rbac.authorization.k8s.io/calico-tier-getter created
+clusterrolebinding.rbac.authorization.k8s.io/calico-kube-controllers created
+clusterrolebinding.rbac.authorization.k8s.io/calico-node created
+clusterrolebinding.rbac.authorization.k8s.io/calico-cni-plugin created
+clusterrolebinding.rbac.authorization.k8s.io/calico-tier-getter created
+daemonset.apps/calico-node created
+deployment.apps/calico-kube-controllers created
+node/tenant-a-worker condition met
+Waiting for daemon set "calico-node" rollout to finish: 0 of 1 updated pods are available...
+daemon set "calico-node" successfully rolled out
+pod/calico-kube-controllers-5b84fd7749-qgc64 condition met
+
+[16:38:44] 导入本地镜像
+docker.io/library/nvml mock:local       	saved	
+application/vnd.oci.image.index.v1+json sha256:08948a2cfba46daa964c65b3fec1953b167e71728b36931610c9b71340c05784
+Importing	elapsed: 26.9s	total:   0.0 B	(0.0 B/s)	
+docker.io/library/nvml mock:local       	saved	
+docker.io/library/hami:local            	saved	
+application/vnd.oci.image.index.v1+json sha256:08948a2cfba46daa964c65b3fec1953b167e71728b36931610c9b71340c05784
+application/vnd.oci.image.index.v1+json sha256:e68cc2d4daf7852573bc372f8c67f1bfe2bc986403b2c121fef2ae9ab96aff5f
+Importing	elapsed: 26.9s	total:   0.0 B	(0.0 B/s)	
+
+[16:39:11] nvml-mock
+Pulled: ghcr.io/nvidia/k8s-test-infra/chart/nvml-mock:0.6.0
+Digest: sha256:173ed1d79f7a3886214552e38a2d8029e4724546a0c9276a89e6cf578f0c5ca7
+nvml-mock 渲染出的镜像:
+  nvml-mock:local
+nvml-mock 渲染检查通过
+Pulled: ghcr.io/nvidia/k8s-test-infra/chart/nvml-mock:0.6.0
+Digest: sha256:173ed1d79f7a3886214552e38a2d8029e4724546a0c9276a89e6cf578f0c5ca7
+NAME     	NAMESPACE	REVISION	UPDATED                                 	STATUS  	CHART          	APP VERSION
+nvml-mock	default  	1       	2026-11-02 16:39:14.437074883 +1100 AEDT	deployed	nvml-mock-0.6.0	0.6.0      
+node/tenant-a-worker labeled
+
+[16:39:15] HAMi @2b8f4e29c48bca376d4f6123d7c6ae7627aef579
+hami 渲染出的镜像:
+  docker.io/hami:local
+  registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.9@sha256:01038e7de14b78d702d2849c3aad72fd25903c4765af63cf16aa3398f5d5f2dd
+  registry.k8s.io/kube-scheduler:v1.36.4
+hami 渲染检查通过
+Release "hami" does not exist. Installing it now.
+NAME: hami
+LAST DEPLOYED: Mon Nov  2 16:39:16 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+** Please be patient while the chart is being deployed **
+Resource name: nvidia.com/gpu
+node/tenant-a-worker labeled
+daemonset.apps/hami-device-plugin env updated
+daemonset.apps/hami-device-plugin restarted
+ok: tenant-a-worker nvidia.com/gpu=10
+ok: device-plugin 主容器 Ready
+deployment "hami-scheduler" successfully rolled out
+kube-scheduler registry.k8s.io/kube-scheduler:v1.36.4
+vgpu-scheduler-extender docker.io/hami:local
+device-plugin docker.io/hami:local
+vgpu-monitor docker.io/hami:local
+NAME                                       READY   STATUS    RESTARTS   AGE    IP               NODE              NOMINATED NODE   READINESS GATES
+calico-kube-controllers-5b84fd7749-qgc64   1/1     Running   0          100s   10.244.175.195   tenant-a-worker   <none>           <none>
+calico-node-b8tld                          1/1     Running   0          100s   172.18.0.5       tenant-a-worker   <none>           <none>
+coredns-695c5d47b8-8zxjh                   1/1     Running   0          2m3s   10.244.175.194   tenant-a-worker   <none>           <none>
+coredns-695c5d47b8-9vjml                   1/1     Running   0          2m3s   10.244.175.196   tenant-a-worker   <none>           <none>
+hami-device-plugin-qctwk                   1/2     Running   0          5s     10.244.175.202   tenant-a-worker   <none>           <none>
+hami-scheduler-cccd69798-w8zz5             2/2     Running   0          17s    10.244.175.199   tenant-a-worker   <none>           <none>
+konnectivity-agent-fvqv6                   1/1     Running   0          92s    10.244.175.193   tenant-a-worker   <none>           <none>
+lab-kube-proxy-vphm4                       1/1     Running   0          109s   172.18.0.5       tenant-a-worker   <none>           <none>
+                    nvidia.com/gpu.present=true
+  nvidia.com/gpu:     10
+  nvidia.com/gpu:     0
+  nvidia.com/gpu     0           0
+[{"id":"GPU-12345678-1234-1234-1234-123456780000","count":10,"devmem":40960,"devcore":100,"type":"NVIDIA A100-SXM4-40GB","mode":"hami-core","health":true}]
+--- device-plugin 的 mig 策略
+    "migStrategy": "none",

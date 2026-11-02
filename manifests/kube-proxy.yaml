@@ -1,0 +1,79 @@
+# 自管的 kube-proxy，代替 Kamaji 的 kubeProxy addon。原因见 docs/troubleshooting.md 第 3 条。
+# ${LB_IP}、${K8S_VERSION}、${POD_CIDR} 由 scripts/03-tenant-worker.sh 替换。
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lab-kube-proxy
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lab-kube-proxy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:node-proxier
+subjects:
+  - kind: ServiceAccount
+    name: lab-kube-proxy
+    namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: lab-kube-proxy
+  namespace: kube-system
+  labels:
+    k8s-app: lab-kube-proxy
+spec:
+  selector:
+    matchLabels:
+      k8s-app: lab-kube-proxy
+  template:
+    metadata:
+      labels:
+        k8s-app: lab-kube-proxy
+    spec:
+      serviceAccountName: lab-kube-proxy
+      hostNetwork: true
+      priorityClassName: system-node-critical
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: kube-proxy
+          image: registry.k8s.io/kube-proxy:${K8S_VERSION}
+          command:
+            - /usr/local/bin/kube-proxy
+            - --proxy-mode=iptables
+            - --cluster-cidr=${POD_CIDR}
+            - --hostname-override=$(NODE_NAME)
+            - --conntrack-max-per-core=0
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            # ClusterIP 规则还没写好，不能走 10.96.0.1。
+            - name: KUBERNETES_SERVICE_HOST
+              value: "${LB_IP}"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "6443"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: xtables-lock
+              mountPath: /run/xtables.lock
+            - name: lib-modules
+              mountPath: /lib/modules
+              readOnly: true
+      volumes:
+        - name: xtables-lock
+          hostPath:
+            path: /run/xtables.lock
+            type: FileOrCreate
+        - name: lib-modules
+          hostPath:
+            path: /lib/modules
