@@ -1,0 +1,18 @@
+# 显存超过单卡（T4 16384 MiB），但不超过两张卡的总量。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: over-card
+spec:
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]
+      env:
+        - name: CUDA_DISABLE_CONTROL
+          value: "true"
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+          nvidia.com/gpumem: 20000
+          nvidia.com/gpucores: 10

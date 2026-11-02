@@ -1,0 +1,76 @@
+alertmanager:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false
+# 告警只用 kube-state-metrics 和 agent 指标；节点容器里跑 node-exporter 没有用处。
+prometheus-node-exporter:
+  enabled: false
+server:
+  persistentVolume:
+    enabled: false
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+extraScrapeConfigs: |
+  - job_name: konnectivity-agent
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: [kube-system]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+        regex: konnectivity-agent
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __address__
+        replacement: $1:8134
+  # 经 apiserver 的节点代理抓 kubelet：apiserver → konnectivity → 节点，和调用 webhook 同样经过隧道。
+  # chart 自带的 kubernetes-nodes 直连 kubelet，不经过隧道，不能用来探测。只需要 up，其他指标都丢弃。
+  - job_name: tunnel-probe
+    scheme: https
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    scrape_timeout: 10s
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/$1/proxy/metrics
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: .+
+        action: drop
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: gpu-platform
+        rules:
+          # 计划里的规则：看 agent Pod 是否可用。
+          - alert: KonnectivityAgentUnavailable
+            expr: kube_daemonset_status_number_unavailable{daemonset="konnectivity-agent"} > 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "konnectivity-agent unavailable, HAMi webhook may be unreachable"
+          # agent 自己上报的到 konnectivity-server 的连接数。
+          - alert: KonnectivityAgentDisconnected
+            expr: konnectivity_network_proxy_agent_open_server_connections < 1 or absent(konnectivity_network_proxy_agent_open_server_connections)
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "konnectivity-agent has no connection to konnectivity-server"
+          # 端到端探测：见上面的 tunnel-probe。
+          - alert: ApiserverToNodePathDown
+            expr: up{job="tunnel-probe"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "apiserver cannot reach a node through the tunnel, HAMi webhook may be unreachable"

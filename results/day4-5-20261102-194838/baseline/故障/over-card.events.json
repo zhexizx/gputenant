@@ -1,0 +1,40 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 2,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-02T08:51:16Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "over-card",
+                "namespace": "default",
+                "resourceVersion": "46333",
+                "uid": "1daf6657-3ebb-41d7-aa07-266556c91ba0"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-02T08:51:16Z",
+            "message": "0/1 nodes are available: 1 Insufficient nvidia.com/gpucores, 1 Insufficient nvidia.com/gpumem. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+            "metadata": {
+                "creationTimestamp": "2026-11-02T08:51:16Z",
+                "name": "over-card.18e42e50d6fa454e",
+                "namespace": "default",
+                "resourceVersion": "46342",
+                "uid": "dbc92bd6-fc4c-48f6-a902-a62c554951d2"
+            },
+            "reason": "FailedScheduling",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Warning"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

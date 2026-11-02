@@ -1,0 +1,1 @@
+{"status":"success","data":{"alerts":[{"labels":{"alertname":"ApiserverToNodePathDown","instance":"tenant-b-worker","job":"tunnel-probe","severity":"critical"},"annotations":{"summary":"apiserver cannot reach a node through the tunnel, HAMi webhook may be unreachable"},"state":"pending","activeAt":"2026-11-02T09:00:22.688304728Z","value":"0e+00"}]}}

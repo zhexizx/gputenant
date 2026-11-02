@@ -1,0 +1,67 @@
+# alert 开始: 2026-11-02T19:58:41+11:00
+
+[19:58:41] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[19:58:43] Prometheus chart 29.40.3
+clusterrole.rbac.authorization.k8s.io/prometheus-tunnel-probe created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-tunnel-probe created
+NAME                                             READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+prometheus-kube-state-metrics-86f6b846bf-925vz   1/1     Running   0          53s   10.244.66.153   tenant-b-worker   <none>           <none>
+prometheus-server-6487f45d79-br5hb               2/2     Running   0          53s   10.244.66.154   tenant-b-worker   <none>           <none>
+ok: 规则已加载
+ok: 三个信号都有正常值
+ok: 隧道正常时没有告警
+gauge=[1] up_probe=[1] ds_unavailable=[0]
+
+[20:00:12] 阻断隧道：agent（PID 2114）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0               10.244.66.130:58776         172.18.255.201:8132 
+
+[20:00:13] 确认隧道已断
+20:00:34 隧道不通 1/3: Unable to connect to the server: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
+20:00:40 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+20:00:47 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+   34 14537 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2114（阻断时 2114）
+
+[20:00:47] 隧道已断，观察 300s
+20:00:48 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=inactive ApiserverToNodePathDown=pending gauge=[1] up_probe=[0] ds_unavailable=[0]
+20:01:05 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=inactive ApiserverToNodePathDown=pending gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:01:21 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=inactive ApiserverToNodePathDown=pending gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:01:37 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=pending ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:01:54 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=pending ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:02:11 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=pending ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:02:28 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:02:44 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:01 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:18 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:34 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:51 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:07 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:24 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:40 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:57 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:05:13 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:05:30 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:05:47 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+
+[20:06:03] 恢复隧道，确认告警解除
+ok: 隧道恢复
+ok: 告警全部解除
+gauge=[1] up_probe=[1] ds_unavailable=[0]
+
+[20:06:42] 结论
+KonnectivityAgentUnavailable: 没有触发（隧道断开观察到 351s）
+KonnectivityAgentDisconnected: firing，阻断后 136s
+ApiserverToNodePathDown: firing，阻断后 86s
+恢复后告警已解除
+CHECK PASS: 有告警真实触发
+CHECK PASS: 告警已解除
+
+[20:06:42] 恢复环境
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# alert 结束: 2026-11-02T20:06:51+11:00 rc=0

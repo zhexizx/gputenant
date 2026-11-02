@@ -1,0 +1,100 @@
+结果目录: /home/Zecy/kamaji-hami-lab/results/day4-5-20261102-173829
+tenant-b 环境验证通过
+
+[17:39:22] === degrade.sh baseline
+# baseline 开始: 2026-11-02T17:39:22+11:00
+
+[17:39:22] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[17:39:24] baseline / 对照：创建探针
+over-card: rc=0 0.3s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          1/1     Running   0          61s   10.244.66.139   tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running   0          58m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s   <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          61s   10.244.66.138   tenant-b-worker   <none>           <none>
+ROW baseline	对照	over-card	0	0.3	是	hami-scheduler	-	Pending	0	FilteringFailed: no available node, 1 nodes do not meet 	pod/over-card created 
+ROW baseline	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW baseline	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[17:40:32] 阻断隧道：tenant-b-worker → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+-A OUTPUT -m comment --comment "cali:tVnHkvAo15HuiPy0" -j cali-OUTPUT
+-P FORWARD ACCEPT
+-A FORWARD -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+-A FORWARD -m comment --comment "cali:wUHhoiAYhphO9Mso" -j cali-FORWARD
+
+[17:40:33] 确认隧道已断
+17:40:40 隧道仍然通
+17:40:46 隧道仍然通
+17:40:51 隧道仍然通
+17:40:56 隧道仍然通
+17:41:02 隧道仍然通
+17:41:07 隧道仍然通
+17:41:13 隧道仍然通
+17:41:18 隧道仍然通
+17:41:24 隧道仍然通
+17:41:29 隧道仍然通
+17:41:35 隧道仍然通
+17:41:40 隧道仍然通
+17:41:46 隧道仍然通
+17:41:51 隧道仍然通
+17:41:57 隧道仍然通
+17:42:02 隧道仍然通
+17:42:08 隧道仍然通
+17:42:13 隧道仍然通
+17:42:19 隧道仍然通
+17:42:24 隧道仍然通
+17:42:30 隧道仍然通
+17:42:35 隧道仍然通
+17:42:40 隧道仍然通
+17:42:46 隧道仍然通
+17:42:51 隧道仍然通
+17:42:57 隧道仍然通
+17:43:02 隧道仍然通
+17:43:08 隧道仍然通
+17:43:13 隧道仍然通
+17:43:19 隧道仍然通
+17:43:24 隧道仍然通
+17:43:29 隧道仍然通
+17:43:35 隧道仍然通
+17:43:40 隧道仍然通
+17:43:46 隧道仍然通
+17:43:51 隧道仍然通
+17:43:57 隧道仍然通
+17:44:02 隧道仍然通
+17:44:08 隧道仍然通
+17:44:13 隧道仍然通
+17:44:19 隧道仍然通
+17:44:24 隧道仍然通
+17:44:29 隧道仍然通
+   13  2940 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+    0     0 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+
+ABORT: 没有确认隧道已断，没有创建测试 Pod
+
+[17:44:35] 恢复环境
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# baseline 结束: 2026-11-02T17:44:43+11:00 rc=1
+degrade.sh baseline: rc=1
+
+degrade.sh baseline: rc=1
+# Day 4-5 探针结果 day4-5-20261102-173829
+
+| 实验 | 组 | 探针 | apply rc | 耗时(s) | 已创建 | 调度器 | 节点 | 状态 | HAMi 注解数 | 最后的 Warning | apply 输出 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| baseline | 对照 | over-card | 0 | 0.3 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: no available node, 1 nodes do not meet  | pod/over-card created  |
+| baseline | 对照 | gpu-only | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| baseline | 对照 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+结果目录: /home/Zecy/kamaji-hami-lab/results/day4-5-20261102-173829
+overall=1

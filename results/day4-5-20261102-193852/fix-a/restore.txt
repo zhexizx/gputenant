@@ -1,0 +1,5 @@
+
+[19:45:38] 恢复环境
+mutatingwebhookconfiguration.admissionregistration.k8s.io/hami-webhook patched
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20

@@ -1,0 +1,45 @@
+Name:             gpu-only
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             tenant-b-worker/
+Start Time:       Mon, 02 Nov 2026 19:41:31 +1100
+Labels:           <none>
+Annotations:      <none>
+Status:           Failed
+Reason:           UnexpectedAdmissionError
+Message:          Pod was rejected: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected
+IP:               
+IPs:              <none>
+Containers:
+  app:
+    Image:      busybox:1.37
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      sleep
+      infinity
+    Limits:
+      nvidia.com/gpu:  1
+    Requests:
+      nvidia.com/gpu:  1
+    Environment:
+      CUDA_DISABLE_CONTROL:  true
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-d6s98 (ro)
+Volumes:
+  kube-api-access-d6s98:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason                    Age   From               Message
+  ----     ------                    ----  ----               -------
+  Normal   Scheduled                 61s   default-scheduler  Successfully assigned default/gpu-only to tenant-b-worker
+  Warning  UnexpectedAdmissionError  61s   kubelet            Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected

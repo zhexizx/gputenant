@@ -1,0 +1,3 @@
+NAME                                             READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+prometheus-kube-state-metrics-86f6b846bf-925vz   1/1     Running   0          53s   10.244.66.153   tenant-b-worker   <none>           <none>
+prometheus-server-6487f45d79-br5hb               2/2     Running   0          53s   10.244.66.154   tenant-b-worker   <none>           <none>

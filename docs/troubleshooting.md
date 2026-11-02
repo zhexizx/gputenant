@@ -48,6 +48,26 @@
 - **根因：** 特权容器里以 root 运行时，`[ -w 文件 ]` 不受权限位限制，总是成立。
 - **修复：** 改为读 `stat -c %A` 的权限位。检查脚本自己也要验证：错误的 HAMi 键、停掉的调度器都做过反向测试，确认会失败。
 
+## 7. 在节点 FORWARD 链上加 DROP，隧道断不掉
+
+- **现象：** Day 4 第一轮（`results/day4-5-20261102-173829/baseline/`）按计划在 `tenant-b-worker` 的 `OUTPUT` 和 `FORWARD` 链插入 `-d <LB_IP> --dport 8132 -j DROP`。之后 4 分钟里 `kubectl logs ds/konnectivity-agent` 一直成功，门禁没有通过，没有创建测试 Pod。结束时 FORWARD 的 DROP 只命中了 13 个包。
+- **定位：**
+  - agent 不是 hostNetwork（Pod IP `10.244.66.130`），到 LB 的流量走节点的 FORWARD 链，不走 OUTPUT。
+  - 单独复现，每 10 秒看一次规则顺序：刚插入时 DROP 排在第 1 位，10 秒内 `cali-FORWARD` 就回到第 1 位，DROP 被挤到第 2 位。
+  - agent 对应的 `cali-fw-calid395ae9544c` 第一条规则是 `--ctstate RELATED,ESTABLISHED -j ACCEPT`。
+  - 复现时隧道断了，并且一直没恢复，DROP 的计数持续增加。
+- **根因：** Felix 会定期把自己的跳转规则插回链的最前面。之后 agent 已经建立的连接在 `cali-fw-*` 里就被 ACCEPT 了，到不了 DROP，只有新连接会被拦下。隧道断不断，要看 DROP 还排第一的那几秒里旧连接有没有断：断了，重连就会一直被拦，复现时就是这样；没断，隧道就一直通，第一轮就是这样。所以这种阻断方式结果不稳定。
+- **修复：** 规则改为通过 `nsenter -t <agent PID> -n` 加到 agent Pod 网络命名空间的 OUTPUT 链。这个命名空间里没有 Calico 的规则，已有连接也会被拦下。阻断期间每次检查都确认 agent PID 没变、规则还在：Pod 重建会换一个命名空间，规则就丢了，这时整轮作废。见 `experiments/lib.sh`。
+- **教训：** 规则加上了不等于生效。要看规则的顺序、计数，还有实际的连接状态。
+
+## 8. 准入策略已生效，门禁却一直判定没生效
+
+- **现象：** `results/day4-5-20261102-193852/fix-b/` 里，apply 准入策略后等了 90 秒，门禁报 `准入策略没有生效`，`fix-b` 中止。
+- **定位：** 手动 apply 同一个策略，15 秒后 `status.typeChecking` 为空（没有类型错误）。用 dry-run 创建门禁 Pod 返回 `denied request: GPU Pod must use hami-scheduler`，说明策略已经生效。
+- **根因：** 门禁写成了 `kubectl create --dry-run=server ... | grep -q '<拒绝信息>'`。`scripts/lib.sh` 开了 `set -euo pipefail`，后面的 `set +e` 只关掉了 `-e`，`pipefail` 还在。请求被拒绝时 kubectl 返回 1，即使 grep 匹配到了，整条管道也返回 1。
+- **修复：** 先保存 kubectl 的输出，再判断里面有没有拒绝信息。其他管道里前一个命令都是正常返回，不受影响。
+- **教训：** 要检查失败输出时，不要把会返回非零的命令接到 `grep -q` 前面。
+
 ## 预防措施
 
 | 问题 | 检查 | 位置 |
@@ -57,6 +77,7 @@
 | 3 kube-proxy | 预检 conntrack；发现 addon 就报错；触发 reconcile 和重启后再看 iptables 规则 | `00-preflight.sh`、`02-tenant-cp.sh`、`04-verify-env.sh` |
 | 4 Helm 键 | 安装前渲染并检查镜像；部署后检查实际镜像 | `check-helm-render.sh`、`03-tenant-worker.sh`、`04-verify-env.sh` |
 | 版本漂移 | Kamaji chart 存进仓库并校验 sha256，镜像固定 digest；记录运行中的镜像 | `01-management.sh`、`04-verify-env.sh` |
+| 7 隧道阻断 | 阻断规则加在 agent 命名空间；API 正常且隧道连续 3 次不通，才创建测试 Pod；阻断期间检查 agent PID 和规则 | `experiments/lib.sh` |
 | 手工改动掩盖问题 | 一条命令删除、重建、跑全部测试 | `scripts/verify-from-scratch.sh` |
 
 Docker Desktop 重启或升级后，先运行 `scripts/00-preflight.sh` 和 `scripts/04-verify-env.sh`。

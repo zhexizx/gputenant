@@ -1,0 +1,19 @@
+# fix-b 开始: 2026-11-02T19:45:49+11:00
+
+[19:45:49] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[19:45:50] 方案 B：ValidatingAdmissionPolicy
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler created
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler created
+TIMEOUT(90s): 准入策略已生效
+
+ABORT: 准入策略没有生效
+
+[19:47:24] 恢复环境
+validatingadmissionpolicybinding.admissionregistration.k8s.io "require-hami-scheduler" deleted
+validatingadmissionpolicy.admissionregistration.k8s.io "require-hami-scheduler" deleted
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# fix-b 结束: 2026-11-02T19:47:33+11:00 rc=1
