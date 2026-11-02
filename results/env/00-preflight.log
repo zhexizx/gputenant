@@ -1,0 +1,16 @@
+ok:   docker
+ok:   kind
+ok:   kubectl
+ok:   helm
+ok:   jq
+ok:   curl
+ok:   git
+info: Docker 引擎: Docker Desktop，24 CPU，15 GiB
+ok:   内存足够（两个租户实测约 5 GiB）
+info: 本机没有 kind 网桥 172.18.0.0/16，LB IP 不可直连，kubectl 走 127.0.0.1 上的 socat 代理
+ok:   端口 16443 空闲
+ok:   端口 16444 空闲
+info: swap=4194304kB，nf_conntrack_max=262144，可写=no
+ok:   有 swap，TCP 已设置 failSwapOn: false
+ok:   kube-proxy 默认要写 conntrack=786432 但只读，自管 kube-proxy 已设置 --conntrack-max-per-core=0
+预检通过

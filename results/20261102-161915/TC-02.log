@@ -1,0 +1,41 @@
+# TC-02: 节点和 Konnectivity 隧道（tenant-a）
+# 开始: 2026-11-02T16:19:50+11:00
+
+$ tk tenant-a get nodes -o wide
+NAME              STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                             CONTAINER-RUNTIME
+tenant-a-worker   Ready    <none>   22m   v1.36.4   172.18.0.5    <none>        Debian GNU/Linux 13 (trixie)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+$ tk tenant-a -n kube-system get pods
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-5b84fd7749-vkqc4   1/1     Running   0          38m
+calico-node-zj2x2                          1/1     Running   0          38m
+coredns-695c5d47b8-gfc5k                   1/1     Running   0          54m
+coredns-695c5d47b8-qzjp7                   1/1     Running   0          54m
+hami-device-plugin-lzb97                   2/2     Running   0          3m30s
+hami-scheduler-cccd69798-tsg9n             2/2     Running   0          3m37s
+konnectivity-agent-qrsrn                   1/1     Running   0          22m
+lab-kube-proxy-h7n6h                       1/1     Running   0          22m
+
+$ tk tenant-a get mutatingwebhookconfigurations
+NAME           WEBHOOKS   AGE
+hami-webhook   1          19m
+    name: hami-webhook
+        name: hami-scheduler
+    failurePolicy: Ignore
+    name: vgpu.hami.io
+    timeoutSeconds: 10
+CHECK PASS: 节点 Ready (= True)
+CHECK PASS: konnectivity-agent Ready (= 1)
+
+$ kubectl -n kube-system logs ds/konnectivity-agent --tail=5
+I1102 05:19:51.668475       1 client.go:373] "[tracing] recv packet" type="DATA"
+I1102 05:19:51.668487       1 client.go:485] "received DATA" connectionID=8
+I1102 05:19:51.668569       1 client.go:611] "write to remote" connectionID=8 lastData=1178 dataSize=1178
+I1102 05:19:51.668642       1 client.go:611] "write to remote" connectionID=8 lastData=200 dataSize=200
+I1102 05:19:51.669247       1 client.go:554] "received data from remote" bytes=106 connectionID=8
+CHECK PASS: 经隧道读取节点日志
+CHECK PASS: hami-webhook 已注册
+failurePolicy=Ignore
+
+# 结束: 2026-11-02T16:19:52+11:00
+RESULT TC-02 PASS (4 checks, 0 failed)

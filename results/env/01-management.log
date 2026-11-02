@@ -1,0 +1,162 @@
+
+[16:34:11] 创建 kind 集群 kamaji
+Creating cluster "kamaji" ...
+ • Ensuring node image (kindest/node:v1.37.0) 🖼️  ...
+ ✓ Ensuring node image (kindest/node:v1.37.0) 🖼️
+ • Preparing nodes 📦   ...
+ ✓ Preparing nodes 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Waiting ≤ 2m0s for control-plane = Ready ⏳  ...
+ ✓ Waiting ≤ 2m0s for control-plane = Ready ⏳
+ • Ready after 16s 💚
+Set kubectl context to "kind-kamaji"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kamaji --kubeconfig /home/Zecy/kamaji-hami-lab/kubeconfigs/management.kubeconfig
+
+Thanks for using kind! 😊
+NAME                   STATUS   ROLES           AGE   VERSION
+kamaji-control-plane   Ready    control-plane   22s   v1.37.0
+
+[16:34:43] cert-manager v1.21.2
+namespace/cert-manager created
+customresourcedefinition.apiextensions.k8s.io/challenges.acme.cert-manager.io created
+customresourcedefinition.apiextensions.k8s.io/orders.acme.cert-manager.io created
+customresourcedefinition.apiextensions.k8s.io/certificaterequests.cert-manager.io created
+customresourcedefinition.apiextensions.k8s.io/certificates.cert-manager.io created
+customresourcedefinition.apiextensions.k8s.io/clusterissuers.cert-manager.io created
+customresourcedefinition.apiextensions.k8s.io/issuers.cert-manager.io created
+serviceaccount/cert-manager-cainjector created
+serviceaccount/cert-manager created
+serviceaccount/cert-manager-webhook created
+clusterrole.rbac.authorization.k8s.io/cert-manager-cainjector created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-issuers created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-clusterissuers created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-certificates created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-orders created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-challenges created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-ingress-shim created
+clusterrole.rbac.authorization.k8s.io/cert-manager-cluster-view created
+clusterrole.rbac.authorization.k8s.io/cert-manager-view created
+clusterrole.rbac.authorization.k8s.io/cert-manager-edit created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-approve:cert-manager-io created
+clusterrole.rbac.authorization.k8s.io/cert-manager-controller-certificatesigningrequests created
+clusterrole.rbac.authorization.k8s.io/cert-manager-webhook:subjectaccessreviews created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-cainjector created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-issuers created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-clusterissuers created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-certificates created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-orders created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-challenges created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-ingress-shim created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-approve:cert-manager-io created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-controller-certificatesigningrequests created
+clusterrolebinding.rbac.authorization.k8s.io/cert-manager-webhook:subjectaccessreviews created
+role.rbac.authorization.k8s.io/cert-manager-cainjector:leaderelection created
+role.rbac.authorization.k8s.io/cert-manager:leaderelection created
+role.rbac.authorization.k8s.io/cert-manager-webhook:dynamic-serving created
+rolebinding.rbac.authorization.k8s.io/cert-manager-cainjector:leaderelection created
+rolebinding.rbac.authorization.k8s.io/cert-manager:leaderelection created
+rolebinding.rbac.authorization.k8s.io/cert-manager-webhook:dynamic-serving created
+service/cert-manager-cainjector created
+service/cert-manager created
+service/cert-manager-webhook created
+deployment.apps/cert-manager-cainjector created
+deployment.apps/cert-manager created
+deployment.apps/cert-manager-webhook created
+mutatingwebhookconfiguration.admissionregistration.k8s.io/cert-manager-webhook created
+validatingwebhookconfiguration.admissionregistration.k8s.io/cert-manager-webhook created
+Waiting for deployment "cert-manager" rollout to finish: 0 of 1 updated replicas are available...
+deployment "cert-manager" successfully rolled out
+deployment "cert-manager-cainjector" successfully rolled out
+Waiting for deployment "cert-manager-webhook" rollout to finish: 0 of 1 updated replicas are available...
+deployment "cert-manager-webhook" successfully rolled out
+
+[16:35:02] MetalLB v0.16.1
+namespace/metallb-system created
+customresourcedefinition.apiextensions.k8s.io/bfdprofiles.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/bgpadvertisements.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/bgppeers.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/bgpsessionstates.frrk8s.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/communities.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/configurationstates.metallb.io created
+Warning: unrecognized format "cidr"
+customresourcedefinition.apiextensions.k8s.io/frrconfigurations.frrk8s.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/frrk8sconfigurations.frrk8s.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/frrnodestates.frrk8s.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/ipaddresspools.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/l2advertisements.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/servicebgpstatuses.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/servicel2statuses.metallb.io created
+serviceaccount/controller created
+serviceaccount/frr-k8s-daemon created
+serviceaccount/speaker created
+role.rbac.authorization.k8s.io/controller created
+role.rbac.authorization.k8s.io/frr-k8s-daemon-role created
+role.rbac.authorization.k8s.io/frr-k8s-nodestate-cleaner-role created
+role.rbac.authorization.k8s.io/pod-lister created
+clusterrole.rbac.authorization.k8s.io/frr-k8s-daemon-role created
+clusterrole.rbac.authorization.k8s.io/frr-k8s-metrics-reader created
+clusterrole.rbac.authorization.k8s.io/frr-k8s-proxy-role created
+clusterrole.rbac.authorization.k8s.io/metallb-system:controller created
+clusterrole.rbac.authorization.k8s.io/metallb-system:speaker created
+rolebinding.rbac.authorization.k8s.io/controller created
+rolebinding.rbac.authorization.k8s.io/frr-k8s-daemon-rolebinding created
+rolebinding.rbac.authorization.k8s.io/frr-k8s-nodestate-cleaner-rolebinding created
+rolebinding.rbac.authorization.k8s.io/pod-lister created
+clusterrolebinding.rbac.authorization.k8s.io/frr-k8s-daemon-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/frr-k8s-proxy-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/metallb-system:controller created
+clusterrolebinding.rbac.authorization.k8s.io/metallb-system:speaker created
+configmap/frr-k8s-frr-startup created
+configmap/metallb-excludel2 created
+secret/frr-k8s-webhook-server-cert created
+secret/metallb-webhook-cert created
+service/frr-k8s-metrics-service created
+service/frr-k8s-webhook-service created
+service/metallb-webhook-service created
+deployment.apps/controller created
+deployment.apps/frr-k8s-statuscleaner created
+daemonset.apps/frr-k8s-daemon created
+daemonset.apps/speaker created
+validatingwebhookconfiguration.admissionregistration.k8s.io/frr-k8s-validating-webhook-configuration created
+validatingwebhookconfiguration.admissionregistration.k8s.io/metallb-webhook-configuration created
+Waiting for deployment "controller" rollout to finish: 0 of 1 updated replicas are available...
+deployment "controller" successfully rolled out
+Waiting for deployment "frr-k8s-statuscleaner" rollout to finish: 0 of 1 updated replicas are available...
+deployment "frr-k8s-statuscleaner" successfully rolled out
+daemon set "frr-k8s-daemon" successfully rolled out
+daemon set "speaker" successfully rolled out
+kind 子网 172.18.0.0/16，MetalLB 地址池 172.18.255.200-172.18.255.250
+ipaddresspool.metallb.io/kind-ip-pool created
+l2advertisement.metallb.io/empty created
+
+[16:36:34] Kamaji（仓库内的 chart，镜像固定 digest）
+/home/Zecy/kamaji-hami-lab/manifests/charts/kamaji-0.0.0+latest.tgz: OK
+Release "kamaji" does not exist. Installing it now.
+NAME: kamaji
+LAST DEPLOYED: Mon Nov  2 16:36:37 2026
+NAMESPACE: kamaji-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+List the available CRDs installed by Kamaji:
+  kubectl get customresourcedefinitions.apiextensions.k8s.io
+
+List all the Tenant Control Plane resources deployed in your cluster:
+  kubectl get tenantcontrolplanes.kamaji.clastix.io --all-namespaces
+NAME                      READY   STATUS    RESTARTS   AGE
+kamaji-78dd84457f-xzd9m   1/1     Running   0          40s
+kamaji-etcd-0             1/1     Running   0          40s
+kamaji-etcd-1             1/1     Running   0          29s
+kamaji-etcd-2             1/1     Running   0          24s
+NAME      DRIVER   READY   AGE
+default   etcd     true    40s

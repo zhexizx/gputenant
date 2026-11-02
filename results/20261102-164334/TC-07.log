@@ -1,0 +1,25 @@
+# TC-07: 显存超分被拒绝（申请 50000，单卡 40960）
+# 开始: 2026-11-02T16:44:04+11:00
+
+$ tk tenant-a get node tenant-a-worker -o jsonpath={.metadata.annotations.hami\.io/node-nvidia-register}{"\n"}
+[{"id":"GPU-12345678-1234-1234-1234-123456780000","count":10,"devmem":40960,"devcore":100,"type":"NVIDIA A100-SXM4-40GB","mode":"hami-core","health":true}]
+CHECK PASS: 单卡显存和计划一致 (= 40960)
+pod/gpu-mem-big created
+
+$ tk tenant-a get pod gpu-mem-big -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+gpu-mem-big   0/1     Pending   0          1s    <none>   <none>   <none>           <none>
+Events:
+  Type     Reason            Age              From            Message
+  ----     ------            ----             ----            -------
+  Warning  FailedScheduling  0s               hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FailedScheduling  0s               hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FilteringFailed   1s (x2 over 1s)  hami-scheduler  1 nodes CardInsufficientMemory(tenant-a-worker)
+  Warning  FilteringFailed   1s (x2 over 1s)  hami-scheduler  no available node, 1 nodes do not meet
+CHECK PASS: schedulerName (= hami-scheduler)
+CHECK PASS: 没有被调度 (= )
+CHECK PASS: phase (= Pending)
+CHECK PASS: 事件包含 CardInsufficientMemory
+
+# 结束: 2026-11-02T16:44:07+11:00
+RESULT TC-07 PASS (5 checks, 0 failed)

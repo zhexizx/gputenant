@@ -1,0 +1,32 @@
+# TC-01: 控制面和 API 地址
+# 开始: 2026-11-02T16:29:29+11:00
+
+$ kubectl -n tenants get tcp,pods,svc
+NAME                                            VERSION   INSTALLED VERSION   STATUS   CONTROL-PLANE ENDPOINT   KUBECONFIG                  DATASTORE   AGE
+tenantcontrolplane.kamaji.clastix.io/tenant-a   v1.36.4   v1.36.4             Ready    172.18.255.200:6443      tenant-a-admin-kubeconfig   default     4m41s
+tenantcontrolplane.kamaji.clastix.io/tenant-b   v1.36.4   v1.36.4             Ready    172.18.255.201:6443      tenant-b-admin-kubeconfig   default     2m13s
+
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/tenant-a-f9f65dbb4-nmxjr    4/4     Running   0          4m40s
+pod/tenant-b-5b9c5bcdb7-vgr77   4/4     Running   0          2m12s
+
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                         AGE
+service/tenant-a   LoadBalancer   10.96.111.18    172.18.255.200   6443:30572/TCP,8132:30858/TCP   4m41s
+service/tenant-b   LoadBalancer   10.96.131.242   172.18.255.201   6443:30253/TCP,8132:32046/TCP   2m13s
+
+--- tenant-a
+CHECK PASS: tenant-a TCP 状态 (= Ready)
+CHECK PASS: tenant-a 控制面 Pod 4 个容器都 Ready (= 4)
+CHECK PASS: tenant-a LB IP 已分配 (172.18.255.200)
+CHECK PASS: tenant-a 从 kind 网络访问 /readyz (= 200)
+CHECK PASS: tenant-a kubeconfig 访问 /readyz (= ok)
+
+--- tenant-b
+CHECK PASS: tenant-b TCP 状态 (= Ready)
+CHECK PASS: tenant-b 控制面 Pod 4 个容器都 Ready (= 4)
+CHECK PASS: tenant-b LB IP 已分配 (172.18.255.201)
+CHECK PASS: tenant-b 从 kind 网络访问 /readyz (= 200)
+CHECK PASS: tenant-b kubeconfig 访问 /readyz (= ok)
+
+# 结束: 2026-11-02T16:29:31+11:00
+RESULT TC-01 PASS (10 checks, 0 failed)
