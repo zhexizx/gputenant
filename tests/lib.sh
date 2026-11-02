@@ -28,6 +28,17 @@ check() { local d="$1"; shift; if "$@" >/dev/null 2>&1; then pass "$d"; else fai
 check_eq() {
   if [[ "$2" == "$3" ]]; then pass "$1 (= $3)"; else fail "$1: 实际 '$2'，期望 '$3'"; fi
 }
+# fetch <变量名> <租户> <kubectl 参数...>：把 -o json 的结果存进变量。kubectl 失败就记一次 FAIL 并返回 1。
+# 期望值为空的检查必须先用它取数据，否则 API 不通时空输出也会被判为通过。
+fetch() {
+  local __var="$1" __t="$2" __out; shift 2
+  if __out=$(tk "$__t" "$@" -o json 2>&1); then
+    printf -v "$__var" '%s' "$__out"
+  else
+    fail "kubectl $*: $(head -c 200 <<<"$__out")"
+    return 1
+  fi
+}
 tc_end() {
   local verdict=PASS
   ((CHECKS > 0 && FAILS == 0)) || verdict=FAIL

@@ -117,5 +117,11 @@ tk "$t" -n kube-system get pods -o wide
 tk "$t" describe node "$node" | grep nvidia.com/gpu
 tk "$t" get node "$node" -o jsonpath='{.metadata.annotations.hami\.io/node-nvidia-register}{"\n"}'
 # 这个 commit 启动时总会打印 mig 相关的 flag，所以只看策略是不是 none。
+# 先存下日志再 grep：pipefail 下 grep -q 提前退出会让 kubectl 收到 SIGPIPE，整条管道判为失败。
 echo "--- device-plugin 的 mig 策略"
+mig_none() {
+  local logs
+  logs=$(tk "$t" -n kube-system logs daemonset/hami-device-plugin -c device-plugin) && grep -qE '"migStrategy": *"none"' <<<"$logs"
+}
+wait_until 60 "device-plugin 的 migStrategy 是 none" mig_none || die "device-plugin 的 migStrategy 不是 none"
 tk "$t" -n kube-system logs daemonset/hami-device-plugin -c device-plugin | grep -F '"migStrategy"' || true

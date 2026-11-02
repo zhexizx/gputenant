@@ -4,10 +4,11 @@
 
 ## 当前状态
 
-- 用最终版脚本删除环境、从零重建后，两个租户的 TC-01~08 全部通过，结果见 `results/20261102-164334/`。
+- 用当前脚本删除环境、从零重建后，TC-01~08 全部通过，结果见 `results/20261102-204926/`，环境日志在 `results/env/`。
+- 测试范围：TC-02~07 只在 tenant-a 上运行；tenant-b 由 TC-01、TC-08 和 `scripts/04-verify-env.sh tenant-b` 验证。
 - `up.sh`、`down.sh`、`verify-from-scratch.sh` 都实际运行过。
 - 预防措施已加到脚本，总计划附录已更新。
-- 还没有提交 git。
+- 第一批脚本和结果在提交 `5a1eb97` 中。
 
 ## 计划变更
 
@@ -68,6 +69,13 @@ Kamaji chart 存在 `manifests/charts/` 并校验 sha256，镜像固定为 `sha2
 | `results/20261102-161915/` | 两个租户 | TC-01~08 通过 |
 | `results/20261102-162928/` | 从零重建 | TC-01~08 通过 |
 | `results/20261102-164334/` | 加入预防措施后从零重建 | TC-01~08 通过 |
+| `results/20261102-170927/` | 修改 TC-06、07 后只重跑这两项 | TC-06、07 通过 |
+| `results/20261102-204926/` | 按代码审查修复后从零重建 | TC-01~08 通过 |
+
+代码审查后的修复：
+
+- TC-04、06、07、08 里期望值为空或为 0 的检查，改为先用 `fetch` 取数据。kubectl 失败时直接判为 FAIL，不会因为输出为空而误判通过。已用不存在的 Pod 和不通的 API 做过反向测试。
+- `03-tenant-worker.sh` 对 `migStrategy` 加了断言，不是 `none` 就失败；两个租户的日志里都有 `ok: device-plugin 的 migStrategy 是 none`。
 
 ## 解决的问题
 
@@ -84,7 +92,7 @@ Kamaji chart 存在 `manifests/charts/` 并校验 sha256，镜像固定为 `sha2
 - HAMi 镜像参数改为 `scheduler.extender.image.*`、`devicePlugin.monitor.image.*`、`scheduler.kubeScheduler.image.tag`。
 - `nvidia.com/gpu.present` 标签要手动打。
 - `vgpu-monitor` 是 2/2 Ready，没有复现计划说的崩溃。
-- `grep -i mig` 会有输出，实际 `migStrategy` 是 `none`。
+- `grep -i mig` 会有输出，所以改为断言 `migStrategy` 是 `none`。
 - 实测单卡显存：A100 40960 MiB，T4 16384 MiB。
 
 ## 局限

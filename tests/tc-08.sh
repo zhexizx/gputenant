@@ -12,7 +12,9 @@ check_eq "$A 只看到自己的节点" "$(tk "$A" get nodes -o jsonpath='{.items
 check_eq "$B 只看到自己的节点" "$(tk "$B" get nodes -o jsonpath='{.items[*].metadata.name}')" tenant-b-worker
 check "$A 能看到 gpu-share-1" tk "$A" get pod gpu-share-1
 check "$B 的 API 可访问" tk "$B" get --raw /readyz
-check_eq "$B 看不到 $A 的 gpu-* Pod" "$(tk "$B" get pods -A -o name | grep -c 'gpu-')" 0
+if fetch b_pods "$B" get pods -A; then
+  check_eq "$B 看不到 $A 的 gpu-* Pod" "$(jq '[.items[].metadata.name | select(test("gpu-"))] | length' <<<"$b_pods")" 0
+fi
 check_eq "$A nvidia.com/gpu" "$(tk "$A" get node tenant-a-worker -o jsonpath='{.status.allocatable.nvidia\.com/gpu}')" 10
 check_eq "$B nvidia.com/gpu" "$(tk "$B" get node tenant-b-worker -o jsonpath='{.status.allocatable.nvidia\.com/gpu}')" 20
 check_eq "$B 有 2 张卡" "$(tk "$B" get node tenant-b-worker -o json | jq -r '.metadata.annotations["hami.io/node-nvidia-register"] | fromjson | length')" 2
