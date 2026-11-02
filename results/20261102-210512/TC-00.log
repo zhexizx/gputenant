@@ -1,0 +1,57 @@
+# TC-00: 测试框架自检（不依赖集群）
+# 开始: 2026-11-02T21:05:44+11:00
+
+## fetch_json：资源不存在时 FAIL
+    | 
+    | $ kubectl get pod x -o json
+    | Error from server (NotFound): pods "x" not found
+    | CHECK FAIL: kubectl get pod x 失败（rc=1，错误见上方输出）
+CHECK PASS: fetch_json：资源不存在时 FAIL (= COUNTS 1 1 1)
+
+## fetch_json：API 不通时 FAIL
+    | 
+    | $ kubectl get node tenant-a-worker -o json
+    | dial tcp 127.0.0.1:16443: connect: connection refused
+    | CHECK FAIL: kubectl get node tenant-a-worker 失败（rc=1，错误见上方输出）
+CHECK PASS: fetch_json：API 不通时 FAIL (= COUNTS 1 1 1)
+
+## fetch_json：输出不是 JSON 时 FAIL
+    | 
+    | $ kubectl get node tenant-a-worker -o json
+    | CHECK FAIL: kubectl get node tenant-a-worker 的输出不是合法 JSON: not json
+CHECK PASS: fetch_json：输出不是 JSON 时 FAIL (= COUNTS 1 1 1)
+
+## fetch_json：stderr 有警告时 JSON 不被污染
+    | 
+    | $ kubectl get node tenant-a-worker -o json
+    | Warning: something is deprecated
+    | （31 字节 JSON，已校验）
+CHECK PASS: fetch_json：stderr 有警告时 JSON 不被污染 (= COUNTS 0 0 0)
+
+## check_pending_on_hami：API 不通时 FAIL，不判通过
+    | 
+    | $ kubectl get pod gpu-share-4 -o json
+    | connection refused
+    | CHECK FAIL: kubectl get pod gpu-share-4 失败（rc=1，错误见上方输出）
+CHECK PASS: check_pending_on_hami：API 不通时 FAIL，不判通过 (= COUNTS 1 1 1)
+
+## check_pending_on_hami：Pod 已被调度时 FAIL
+    | 
+    | $ kubectl get pod gpu-share-4 -o json
+    | （101 字节 JSON，已校验）
+    | CHECK PASS: gpu-share-4 schedulerName (= hami-scheduler)
+    | CHECK FAIL: gpu-share-4 没有被调度: 实际 'tenant-a-worker'，期望 ''
+    | CHECK FAIL: gpu-share-4 phase: 实际 'Running'，期望 'Pending'
+CHECK PASS: check_pending_on_hami：Pod 已被调度时 FAIL (= COUNTS 0 3 2)
+
+## check_pending_on_hami：正常 Pending 时 3 项通过
+    | 
+    | $ kubectl get pod gpu-share-4 -o json
+    | （72 字节 JSON，已校验）
+    | CHECK PASS: gpu-share-4 schedulerName (= hami-scheduler)
+    | CHECK PASS: gpu-share-4 没有被调度 (= )
+    | CHECK PASS: gpu-share-4 phase (= Pending)
+CHECK PASS: check_pending_on_hami：正常 Pending 时 3 项通过 (= COUNTS 0 3 0)
+
+# 结束: 2026-11-02T21:05:44+11:00
+RESULT TC-00 PASS (7 checks, 0 failed)
