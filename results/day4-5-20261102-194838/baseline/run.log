@@ -1,0 +1,54 @@
+# baseline 开始: 2026-11-02T19:49:30+11:00
+
+[19:49:30] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[19:49:32] baseline / 对照：创建探针
+over-card: rc=0 0.2s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE    IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          1/1     Running   0          61s    10.244.66.146   tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running   0          3h8m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s    <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s    10.244.66.145   tenant-b-worker   <none>           <none>
+ROW baseline	对照	over-card	0	0.2	是	hami-scheduler	-	Pending	0	FilteringFailed: no available node, 1 nodes do not meet 	pod/over-card created 
+ROW baseline	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW baseline	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[19:50:40] 阻断隧道：agent（PID 2114）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0      10.244.66.130:59698 172.18.255.201:8132 
+
+[19:50:42] 确认隧道已断
+19:51:03 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+19:51:09 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+19:51:15 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+   30 13126 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2114（阻断时 2114）
+
+[19:51:16] baseline / 故障：创建探针
+over-card: rc=0 0.2s: pod/over-card created
+gpu-only: rc=0 0.2s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS                     RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          0/1     UnexpectedAdmissionError   0          60s     <none>          tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running                    0          3h10m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending                    0          60s     <none>          <none>            <none>           <none>
+plain-probe       1/1     Running                    0          60s     10.244.66.147   tenant-b-worker   <none>           <none>
+ROW baseline	故障	over-card	0	0.2	是	default-scheduler	-	Pending	0	FailedScheduling: 0/1 nodes are available: 1 Insufficient nvidia.com/gpucores, 1 Insufficient nvidia.com/gpumem. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not h	pod/over-card created 
+ROW baseline	故障	gpu-only	0	0.2	是	default-scheduler	tenant-b-worker	Failed/UnexpectedAdmissionError	0	UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected 	pod/gpu-only created 
+ROW baseline	故障	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+
+[19:52:20] 恢复环境
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# baseline 结束: 2026-11-02T19:52:29+11:00 rc=0

@@ -1,0 +1,16 @@
+# 只申请节点真实上报的 nvidia.com/gpu：默认调度器能调度它，用来观察绕过 HAMi 后的结果。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-only
+spec:
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]
+      env:
+        - name: CUDA_DISABLE_CONTROL
+          value: "true"
+      resources:
+        limits:
+          nvidia.com/gpu: 1

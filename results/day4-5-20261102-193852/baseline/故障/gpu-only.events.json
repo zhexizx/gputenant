@@ -1,0 +1,72 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-02T08:41:31Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "43888",
+                "uid": "0e8ce708-28d4-455a-a893-ea959b886d0b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-02T08:41:31Z",
+            "message": "Successfully assigned default/gpu-only to tenant-b-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-02T08:41:31Z",
+                "name": "gpu-only.18e42dc8b4e28e99",
+                "namespace": "default",
+                "resourceVersion": "43890",
+                "uid": "ea9d6a63-85d1-44d9-b2cd-c825d23e47fa"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-02T08:41:31Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "43889",
+                "uid": "0e8ce708-28d4-455a-a893-ea959b886d0b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-02T08:41:31Z",
+            "message": "Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected",
+            "metadata": {
+                "creationTimestamp": "2026-11-02T08:41:31Z",
+                "name": "gpu-only.18e42dc8b55173b8",
+                "namespace": "default",
+                "resourceVersion": "43891",
+                "uid": "dbf7d7d0-f45a-4838-ac5c-78c9dcd96eef"
+            },
+            "reason": "UnexpectedAdmissionError",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Warning"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

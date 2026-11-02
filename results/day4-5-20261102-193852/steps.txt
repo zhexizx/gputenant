@@ -1,0 +1,3 @@
+degrade.sh baseline: rc=0
+degrade.sh fix-a: rc=0
+degrade.sh fix-b: rc=1

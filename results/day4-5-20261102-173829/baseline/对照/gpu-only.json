@@ -1,0 +1,259 @@
+{
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+        "annotations": {
+            "cni.projectcalico.org/containerID": "0d93cd1fbcae32de325bb50eb68e3497efd4003bb38664401ce8147f6dba1cf8",
+            "cni.projectcalico.org/podIP": "10.244.66.139/32",
+            "cni.projectcalico.org/podIPs": "10.244.66.139/32",
+            "hami.io/bind-phase": "success",
+            "hami.io/bind-time": "1793601564",
+            "hami.io/vgpu-devices-allocated": "GPU-00000074-0000-0000-0000-000000000001,NVIDIA,16384,100:;",
+            "hami.io/vgpu-devices-to-allocate": ";;",
+            "hami.io/vgpu-node": "tenant-b-worker",
+            "hami.io/vgpu-time": "1793601564",
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"name\":\"gpu-only\",\"namespace\":\"default\"},\"spec\":{\"containers\":[{\"command\":[\"sleep\",\"infinity\"],\"env\":[{\"name\":\"CUDA_DISABLE_CONTROL\",\"value\":\"true\"}],\"image\":\"busybox:1.37\",\"name\":\"app\",\"resources\":{\"limits\":{\"nvidia.com/gpu\":1}}}]}}\n"
+        },
+        "creationTimestamp": "2026-11-02T06:39:24Z",
+        "generation": 1,
+        "labels": {
+            "hami.io/vgpu-node": "tenant-b-worker"
+        },
+        "name": "gpu-only",
+        "namespace": "default",
+        "resourceVersion": "15896",
+        "uid": "38e9cbf7-dc8b-49a9-a006-2522e6d8c7c5"
+    },
+    "spec": {
+        "containers": [
+            {
+                "command": [
+                    "sleep",
+                    "infinity"
+                ],
+                "env": [
+                    {
+                        "name": "CUDA_DISABLE_CONTROL",
+                        "value": "true"
+                    }
+                ],
+                "image": "busybox:1.37",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "app",
+                "resources": {
+                    "limits": {
+                        "nvidia.com/gpu": "1",
+                        "nvidia.com/gpucores": "100"
+                    },
+                    "requests": {
+                        "nvidia.com/gpu": "1",
+                        "nvidia.com/gpucores": "100"
+                    }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                    {
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                        "name": "kube-api-access-d994d",
+                        "readOnly": true
+                    }
+                ]
+            }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "enableServiceLinks": true,
+        "nodeName": "tenant-b-worker",
+        "preemptionPolicy": "PreemptLowerPriority",
+        "priority": 0,
+        "restartPolicy": "Always",
+        "schedulerName": "hami-scheduler",
+        "securityContext": {},
+        "serviceAccount": "default",
+        "serviceAccountName": "default",
+        "terminationGracePeriodSeconds": 30,
+        "tolerations": [
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "tolerationSeconds": 300
+            },
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "tolerationSeconds": 300
+            }
+        ],
+        "volumes": [
+            {
+                "name": "kube-api-access-d994d",
+                "projected": {
+                    "defaultMode": 420,
+                    "sources": [
+                        {
+                            "serviceAccountToken": {
+                                "expirationSeconds": 3607,
+                                "path": "token"
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "items": [
+                                    {
+                                        "key": "ca.crt",
+                                        "path": "ca.crt"
+                                    }
+                                ],
+                                "name": "kube-root-ca.crt"
+                            }
+                        },
+                        {
+                            "downwardAPI": {
+                                "items": [
+                                    {
+                                        "fieldRef": {
+                                            "apiVersion": "v1",
+                                            "fieldPath": "metadata.namespace"
+                                        },
+                                        "path": "namespace"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "status": {
+        "allocatedResources": {
+            "nvidia.com/gpu": "1",
+            "nvidia.com/gpucores": "100"
+        },
+        "conditions": [
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-11-02T06:39:27Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodReadyToStartContainers"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-11-02T06:39:26Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Initialized"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-11-02T06:39:31Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Ready"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-11-02T06:39:31Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "ContainersReady"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-11-02T06:39:25Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodScheduled"
+            }
+        ],
+        "containerStatuses": [
+            {
+                "allocatedResources": {
+                    "nvidia.com/gpu": "1",
+                    "nvidia.com/gpucores": "100"
+                },
+                "allocatedResourcesStatus": [
+                    {
+                        "name": "nvidia.com/gpu",
+                        "resources": [
+                            {
+                                "health": "Healthy",
+                                "resourceID": "GPU-00000074-0000-0000-0000-000000000000-4"
+                            }
+                        ]
+                    }
+                ],
+                "containerID": "containerd://8f451033aff2903dd1cb28d42ecddc133a776625c9f38be875aaaec1d615b8f2",
+                "image": "docker.io/library/busybox:1.37",
+                "imageID": "docker.io/library/busybox@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec",
+                "lastState": {},
+                "name": "app",
+                "ready": true,
+                "resources": {
+                    "limits": {
+                        "nvidia.com/gpu": "1",
+                        "nvidia.com/gpucores": "100"
+                    },
+                    "requests": {
+                        "nvidia.com/gpu": "1",
+                        "nvidia.com/gpucores": "100"
+                    }
+                },
+                "restartCount": 0,
+                "started": true,
+                "state": {
+                    "running": {
+                        "startedAt": "2026-11-02T06:39:31Z"
+                    }
+                },
+                "user": {
+                    "linux": {
+                        "gid": 0,
+                        "supplementalGroups": [
+                            0,
+                            10
+                        ],
+                        "uid": 0
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                        "name": "kube-api-access-d994d",
+                        "readOnly": true,
+                        "recursiveReadOnly": "Disabled"
+                    }
+                ]
+            }
+        ],
+        "hostIP": "172.18.0.7",
+        "hostIPs": [
+            {
+                "ip": "172.18.0.7"
+            }
+        ],
+        "observedGeneration": 1,
+        "phase": "Running",
+        "podIP": "10.244.66.139",
+        "podIPs": [
+            {
+                "ip": "10.244.66.139"
+            }
+        ],
+        "qosClass": "BestEffort",
+        "resources": {
+            "limits": {
+                "nvidia.com/gpu": "1",
+                "nvidia.com/gpucores": "100"
+            },
+            "requests": {
+                "nvidia.com/gpu": "1",
+                "nvidia.com/gpucores": "100"
+            }
+        },
+        "startTime": "2026-11-02T06:39:26Z"
+    }
+}

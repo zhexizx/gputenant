@@ -1,0 +1,10 @@
+# 不申请 GPU：观察修复对普通 Pod 的影响范围。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: plain-probe
+spec:
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]

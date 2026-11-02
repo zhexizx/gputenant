@@ -1,0 +1,281 @@
+结果目录: /home/Zecy/kamaji-hami-lab/results/day4-5-20261102-194838
+tenant-b 环境验证通过
+
+[19:49:30] === degrade.sh baseline
+# baseline 开始: 2026-11-02T19:49:30+11:00
+
+[19:49:30] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[19:49:32] baseline / 对照：创建探针
+over-card: rc=0 0.2s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE    IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          1/1     Running   0          61s    10.244.66.146   tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running   0          3h8m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s    <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s    10.244.66.145   tenant-b-worker   <none>           <none>
+ROW baseline	对照	over-card	0	0.2	是	hami-scheduler	-	Pending	0	FilteringFailed: no available node, 1 nodes do not meet 	pod/over-card created 
+ROW baseline	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW baseline	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[19:50:40] 阻断隧道：agent（PID 2114）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0      10.244.66.130:59698 172.18.255.201:8132 
+
+[19:50:42] 确认隧道已断
+19:51:03 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+19:51:09 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+19:51:15 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+   30 13126 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2114（阻断时 2114）
+
+[19:51:16] baseline / 故障：创建探针
+over-card: rc=0 0.2s: pod/over-card created
+gpu-only: rc=0 0.2s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS                     RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          0/1     UnexpectedAdmissionError   0          60s     <none>          tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running                    0          3h10m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending                    0          60s     <none>          <none>            <none>           <none>
+plain-probe       1/1     Running                    0          60s     10.244.66.147   tenant-b-worker   <none>           <none>
+ROW baseline	故障	over-card	0	0.2	是	default-scheduler	-	Pending	0	FailedScheduling: 0/1 nodes are available: 1 Insufficient nvidia.com/gpucores, 1 Insufficient nvidia.com/gpumem. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not h	pod/over-card created 
+ROW baseline	故障	gpu-only	0	0.2	是	default-scheduler	tenant-b-worker	Failed/UnexpectedAdmissionError	0	UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected 	pod/gpu-only created 
+ROW baseline	故障	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+
+[19:52:20] 恢复环境
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# baseline 结束: 2026-11-02T19:52:29+11:00 rc=0
+degrade.sh baseline: rc=0
+
+[19:52:30] === degrade.sh fix-a
+# fix-a 开始: 2026-11-02T19:52:31+11:00
+
+[19:52:31] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[19:52:32] 方案 A：failurePolicy=Fail
+mutatingwebhookconfiguration.admissionregistration.k8s.io/hami-webhook patched
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+[19:52:38] fix-a / 对照：创建探针
+over-card: rc=0 0.2s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          1/1     Running   0          61s     10.244.66.149   tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running   0          3h11m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s     <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s     10.244.66.148   tenant-b-worker   <none>           <none>
+ROW fix-a	对照	over-card	0	0.2	是	hami-scheduler	-	Pending	0	FilteringFailed: no available node, 1 nodes do not meet 	pod/over-card created 
+ROW fix-a	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW fix-a	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[19:53:47] 阻断隧道：agent（PID 2114）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0      10.244.66.130:32838 172.18.255.201:8132 
+
+[19:53:49] 确认隧道已断
+19:54:10 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+19:54:16 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+19:54:22 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+   31 13579 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2114（阻断时 2114）
+
+[19:54:23] fix-a / 故障：创建探针
+over-card: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/over-card.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+gpu-only: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-only.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+plain-probe: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/plain-probe.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+nvml-mock-668xd   2/2     Running   0          3h13m   10.244.66.133   tenant-b-worker   <none>           <none>
+ROW fix-a	故障	over-card	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/over-card.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call
+ROW fix-a	故障	gpu-only	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-only.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call 
+ROW fix-a	故障	plain-probe	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/plain-probe.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to ca
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+
+[19:55:26] 恢复环境
+mutatingwebhookconfiguration.admissionregistration.k8s.io/hami-webhook patched
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# fix-a 结束: 2026-11-02T19:55:35+11:00 rc=0
+degrade.sh fix-a: rc=0
+
+[19:55:36] === degrade.sh fix-b
+# fix-b 开始: 2026-11-02T19:55:37+11:00
+
+[19:55:37] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[19:55:38] 方案 B：ValidatingAdmissionPolicy
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler created
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler created
+ok: 准入策略已生效
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[19:55:44] fix-b / 对照：创建探针
+over-card: rc=0 0.3s: pod/over-card created
+gpu-only: rc=0 0.2s: pod/gpu-only created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-only          1/1     Running   0          60s     10.244.66.151   tenant-b-worker   <none>           <none>
+nvml-mock-668xd   2/2     Running   0          3h14m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s     <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s     10.244.66.150   tenant-b-worker   <none>           <none>
+ROW fix-b	对照	over-card	0	0.3	是	hami-scheduler	-	Pending	0	FilteringFailed: no available node, 1 nodes do not meet 	pod/over-card created 
+ROW fix-b	对照	gpu-only	0	0.2	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW fix-b	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[19:56:53] 阻断隧道：agent（PID 2114）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0      10.244.66.130:56356 172.18.255.201:8132 
+
+[19:56:54] 确认隧道已断
+19:57:15 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+19:57:21 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+19:57:28 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+   31 13579 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2114（阻断时 2114）
+
+[19:57:28] fix-b / 故障：创建探针
+over-card: rc=1 0.3s: The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+gpu-only: rc=1 0.3s: The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+plain-probe: rc=0 0.2s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+nvml-mock-668xd   2/2     Running   0          3h16m   10.244.66.133   tenant-b-worker   <none>           <none>
+plain-probe       1/1     Running   0          60s     10.244.66.152   tenant-b-worker   <none>           <none>
+ROW fix-b	故障	over-card	1	0.3	否	-	-	-	-	-	The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	gpu-only	1	0.3	否	-	-	-	-	-	The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	plain-probe	0	0.2	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+CHECK PASS: 隧道正常时 GPU Pod 能创建
+CHECK PASS: 隧道断开时 over-card 被明确拒绝
+CHECK PASS: 隧道断开时 gpu-only 被明确拒绝
+
+[19:58:31] 恢复环境
+validatingadmissionpolicybinding.admissionregistration.k8s.io "require-hami-scheduler" deleted
+validatingadmissionpolicy.admissionregistration.k8s.io "require-hami-scheduler" deleted
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# fix-b 结束: 2026-11-02T19:58:40+11:00 rc=0
+degrade.sh fix-b: rc=0
+
+[19:58:41] === alert.sh
+# alert 开始: 2026-11-02T19:58:41+11:00
+
+[19:58:41] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[19:58:43] Prometheus chart 29.40.3
+clusterrole.rbac.authorization.k8s.io/prometheus-tunnel-probe created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-tunnel-probe created
+NAME                                             READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+prometheus-kube-state-metrics-86f6b846bf-925vz   1/1     Running   0          53s   10.244.66.153   tenant-b-worker   <none>           <none>
+prometheus-server-6487f45d79-br5hb               2/2     Running   0          53s   10.244.66.154   tenant-b-worker   <none>           <none>
+ok: 规则已加载
+ok: 三个信号都有正常值
+ok: 隧道正常时没有告警
+gauge=[1] up_probe=[1] ds_unavailable=[0]
+
+[20:00:12] 阻断隧道：agent（PID 2114）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0               10.244.66.130:58776         172.18.255.201:8132 
+
+[20:00:13] 确认隧道已断
+20:00:34 隧道不通 1/3: Unable to connect to the server: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
+20:00:40 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+20:00:47 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-x4brg/konnectivity-agent?tailLines=1": No agent available
+   34 14537 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2114（阻断时 2114）
+
+[20:00:47] 隧道已断，观察 300s
+20:00:48 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=inactive ApiserverToNodePathDown=pending gauge=[1] up_probe=[0] ds_unavailable=[0]
+20:01:05 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=inactive ApiserverToNodePathDown=pending gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:01:21 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=inactive ApiserverToNodePathDown=pending gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:01:37 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=pending ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:01:54 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=pending ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:02:11 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=pending ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:02:28 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:02:44 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:01 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:18 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:34 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:03:51 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:07 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:24 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:40 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:04:57 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:05:13 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:05:30 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+20:05:47 KonnectivityAgentUnavailable=inactive KonnectivityAgentDisconnected=firing ApiserverToNodePathDown=firing gauge=[0] up_probe=[0] ds_unavailable=[0]
+
+[20:06:03] 恢复隧道，确认告警解除
+ok: 隧道恢复
+ok: 告警全部解除
+gauge=[1] up_probe=[1] ds_unavailable=[0]
+
+[20:06:42] 结论
+KonnectivityAgentUnavailable: 没有触发（隧道断开观察到 351s）
+KonnectivityAgentDisconnected: firing，阻断后 136s
+ApiserverToNodePathDown: firing，阻断后 86s
+恢复后告警已解除
+CHECK PASS: 有告警真实触发
+CHECK PASS: 告警已解除
+
+[20:06:42] 恢复环境
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，无准入策略，无探针，gpu=20
+# alert 结束: 2026-11-02T20:06:51+11:00 rc=0
+alert.sh: rc=0
+
+degrade.sh baseline: rc=0
+degrade.sh fix-a: rc=0
+degrade.sh fix-b: rc=0
+alert.sh: rc=0
+# Day 4-5 探针结果 day4-5-20261102-194838
+
+| 实验 | 组 | 探针 | apply rc | 耗时(s) | 已创建 | 调度器 | 节点 | 状态 | HAMi 注解数 | 最后的 Warning | apply 输出 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| baseline | 对照 | over-card | 0 | 0.2 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: no available node, 1 nodes do not meet  | pod/over-card created  |
+| baseline | 对照 | gpu-only | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| baseline | 对照 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| baseline | 故障 | over-card | 0 | 0.2 | 是 | default-scheduler | - | Pending | 0 | FailedScheduling: 0/1 nodes are available: 1 Insufficient nvidia.com/gpucores, 1 Insufficient nvidia.com/gpumem. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not h | pod/over-card created  |
+| baseline | 故障 | gpu-only | 0 | 0.2 | 是 | default-scheduler | tenant-b-worker | Failed/UnexpectedAdmissionError | 0 | UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected  | pod/gpu-only created  |
+| baseline | 故障 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| fix-a | 对照 | over-card | 0 | 0.2 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: no available node, 1 nodes do not meet  | pod/over-card created  |
+| fix-a | 对照 | gpu-only | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| fix-a | 对照 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| fix-a | 故障 | over-card | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/over-card.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call |
+| fix-a | 故障 | gpu-only | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-only.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call  |
+| fix-a | 故障 | plain-probe | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/plain-probe.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to ca |
+| fix-b | 对照 | over-card | 0 | 0.3 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: no available node, 1 nodes do not meet  | pod/over-card created  |
+| fix-b | 对照 | gpu-only | 0 | 0.2 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| fix-b | 对照 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| fix-b | 故障 | over-card | 1 | 0.3 | 否 | - | - | - | - | - | The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler  |
+| fix-b | 故障 | gpu-only | 1 | 0.3 | 否 | - | - | - | - | - | The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler  |
+| fix-b | 故障 | plain-probe | 0 | 0.2 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+结果目录: /home/Zecy/kamaji-hami-lab/results/day4-5-20261102-194838
+overall=0
