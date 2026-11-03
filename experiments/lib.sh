@@ -71,6 +71,16 @@ fw_present() { in_agent_ns iptables -C OUTPUT "${FW[@]}" 2>/dev/null; }
 # 旧版本加在节点上的规则，只用于检查和清理。
 node_fw_present() { docker exec "$NODE" iptables -C "$1" "${FW[@]}" 2>/dev/null; }
 
+# 当前进程和它的全部祖先进程的 PID，空格分隔。
+ancestor_pids() {
+  local p=$$ out=""
+  while [[ -n "$p" && "$p" != 0 ]]; do
+    out+="$p "
+    p=$(awk '/^PPid:/ {print $2}' "/proc/$p/status" 2>/dev/null)
+  done
+  echo "$out"
+}
+
 # 确认没有其他测试在运行，并且环境是干净的。
 guard() {
   log "前置检查"
@@ -81,7 +91,10 @@ guard() {
     export LAB_LOCK_HELD=1
   fi
   local others c pods
-  others=$(pgrep -af 'tests/(run-all|tc-[0-9]+)\.sh|scripts/(up|down|verify-from-scratch|0[0-9]-[a-z-]+)\.sh' || true)
+  # 排除自己的祖先进程：外层 shell 的命令行可能写着 "verify-from-scratch.sh; experiments/run.sh"，
+  # 前一个脚本已经结束，命令行里的字样还在，会被误判成正在运行（troubleshooting 第 9 条）。
+  others=$(pgrep -af 'tests/(run-all|tc-[0-9]+)\.sh|scripts/(up|down|verify-from-scratch|0[0-9]-[a-z-]+)\.sh' \
+    | awk -v anc=" $(ancestor_pids) " 'index(anc, " " $1 " ") == 0' || true)
   [[ -z "$others" ]] || abort "有其他测试或环境脚本在运行：$others"
   echo "ok: 没有其他测试或环境脚本在运行"
   fw_present && abort "agent 命名空间里有上次留下的阻断规则，先运行 experiments/restore.sh"
