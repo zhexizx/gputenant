@@ -1,0 +1,13 @@
+# 变异测试：tenant-a 换回旧表达式（只检查 containers），TC-09 的 init 容器检查应该失败
+# 开始: 2026-11-03T10:49:21+11:00
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler configured
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler unchanged
+旧表达式已生效（第 2 次检查）：pod/m created (server dry run)
+TC-09（旧表达式） rc=1
+CHECK FAIL: tenant-a 跳过 webhook、只在 init 容器申请 GPU 的 Pod：被拒绝
+RESULT TC-09 FAIL (18 checks, 1 failed)
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler configured
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler unchanged
+恢复新表达式后 TC-09 rc=0
+RESULT TC-09 PASS (18 checks, 0 failed)
+# 结束: 2026-11-03T10:49:40+11:00

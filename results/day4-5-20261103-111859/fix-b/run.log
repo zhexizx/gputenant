@@ -1,0 +1,67 @@
+# fix-b 开始: 2026-11-03T11:26:27+11:00
+
+[11:26:27] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[11:26:29] 方案 B：ValidatingAdmissionPolicy
+ok: 默认准入策略已生效
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[11:26:30] fix-b / 对照：创建探针
+over-card: rc=0 0.3s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+gpu-init: rc=0 0.3s: pod/gpu-init created
+plain-probe: rc=0 0.2s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-init          1/1     Running   0          60s   10.244.66.150   tenant-b-worker   <none>           <none>
+gpu-only          1/1     Running   0          61s   10.244.66.149   tenant-b-worker   <none>           <none>
+nvml-mock-s5f9c   2/2     Running   0          13m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s   <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s   10.244.66.148   tenant-b-worker   <none>           <none>
+ROW fix-b	对照	over-card	0	0.3	是	hami-scheduler	-	Pending	0	FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker) 	pod/over-card created 
+ROW fix-b	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW fix-b	对照	gpu-init	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention 	pod/gpu-init created 
+ROW fix-b	对照	plain-probe	0	0.2	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[11:27:40] 阻断隧道：agent（PID 2133）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      30517           10.244.66.132:41734         172.18.255.201:8132 
+
+[11:27:41] 确认隧道已断
+11:28:02 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+11:28:09 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+11:28:15 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+   33 79992 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2133（阻断时 2133）
+
+[11:28:16] fix-b / 故障：创建探针
+over-card: rc=1 0.3s: The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+gpu-only: rc=1 0.3s: The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+gpu-init: rc=1 0.3s: The pods "gpu-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+nvml-mock-s5f9c   2/2     Running   0          15m   10.244.66.133   tenant-b-worker   <none>           <none>
+plain-probe       1/1     Running   0          60s   10.244.66.151   tenant-b-worker   <none>           <none>
+ROW fix-b	故障	over-card	1	0.3	否	-	-	-	-	-	The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	gpu-only	1	0.3	否	-	-	-	-	-	The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	gpu-init	1	0.3	否	-	-	-	-	-	The pods "gpu-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+CHECK PASS: 隧道正常时 GPU Pod 能创建
+CHECK PASS: 隧道断开时 over-card 被明确拒绝
+CHECK PASS: 隧道断开时 gpu-only 被明确拒绝
+CHECK PASS: 隧道断开时 gpu-init 被明确拒绝
+
+[11:29:19] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+# fix-b 结束: 2026-11-03T11:29:30+11:00 rc=0

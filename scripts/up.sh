@@ -15,5 +15,6 @@ step 01-management "$here/01-management.sh"
 for t in "${tenants[@]}"; do
   step "02-$t-cp" "$here/02-tenant-cp.sh" "$t"
   step "03-$t-worker" "$here/03-tenant-worker.sh" "$t"
+  step "05-$t-guardrails" "$here/05-tenant-guardrails.sh" "$t"
   step "04-$t-verify" "$here/04-verify-env.sh" "$t"
 done

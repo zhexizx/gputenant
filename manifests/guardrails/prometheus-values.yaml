@@ -45,19 +45,27 @@ extraScrapeConfigs: |
       - source_labels: [__name__]
         regex: .+
         action: drop
+  # HAMi webhook 和这些指标由同一个进程（vgpu-scheduler-extender）提供：webhook 在 9443，指标在 9395。
+  # 只能发现进程不在或指标端口不通，发现不了“进程在、webhook 处理逻辑坏了”。
+  - job_name: hami-scheduler
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: [kube-system]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+        regex: hami-scheduler
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        regex: metrics
+        action: keep
 serverFiles:
   alerting_rules.yml:
     groups:
       - name: gpu-platform
         rules:
-          # 计划里的规则：看 agent Pod 是否可用。
-          - alert: KonnectivityAgentUnavailable
-            expr: kube_daemonset_status_number_unavailable{daemonset="konnectivity-agent"} > 0
-            for: 1m
-            labels:
-              severity: critical
-            annotations:
-              summary: "konnectivity-agent unavailable, HAMi webhook may be unreachable"
+          # 不部署计划里的 KonnectivityAgentUnavailable：隧道断开时 agent Pod 仍然可用，它不会触发。
+          # 降级实验需要复现这一点时，用 manifests/experiments/prom-experiment-rules.yaml 临时加上。
           # agent 自己上报的到 konnectivity-server 的连接数。
           - alert: KonnectivityAgentDisconnected
             expr: konnectivity_network_proxy_agent_open_server_connections < 1 or absent(konnectivity_network_proxy_agent_open_server_connections)
@@ -74,3 +82,26 @@ serverFiles:
               severity: critical
             annotations:
               summary: "apiserver cannot reach a node through the tunnel, HAMi webhook may be unreachable"
+          # HAMi webhook 所在的进程不在或指标端口不通。缩到 0 时没有抓取目标，所以也要看 absent。
+          - alert: HamiWebhookDown
+            expr: up{job="hami-scheduler"} == 0 or absent(up{job="hami-scheduler"})
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "hami-scheduler (HAMi webhook) is down, GPU Pods will be rejected by require-hami-scheduler"
+          # apiserver 记录的“HAMi webhook 调用失败、按 Ignore 放行”。隧道断开和 webhook 挂掉都会让它增加，
+          # 而且只在真的有 Pod 被放行时才触发，直接对应用户受到的影响。事件型告警：最后一次放行后约 5 分钟解除。
+          # 计数器在第一次放行前不存在，只用 increase() 会漏掉第一次，所以也看“5 分钟前还没有这个计数器”；
+          # Prometheus 刚启动时没有 5 分钟前的数据，这一条不算，避免误报。
+          - alert: HamiWebhookFailOpen
+            expr: |
+              increase(apiserver_admission_webhook_fail_open_count{name="vgpu.hami.io"}[5m]) > 0
+              or (
+                apiserver_admission_webhook_fail_open_count{name="vgpu.hami.io"}
+                  unless apiserver_admission_webhook_fail_open_count{name="vgpu.hami.io"} offset 5m
+              ) and on() (time() - process_start_time_seconds{job="prometheus"} > 300)
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pods were admitted without HAMi webhook (fail-open); GPU Pods may bypass HAMi"

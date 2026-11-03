@@ -1,10 +1,10 @@
 
-[20:39:21] 环境检查
+[11:03:49] 环境检查
  Server Version: 29.8.0
  Cgroup Driver: cgroupfs
                total        used        free      shared  buff/cache   available
-Mem:            15Gi       3.2Gi       7.5Gi        53Mi       4.7Gi        11Gi
-Swap:          4.0Gi       458Mi       3.6Gi
+Mem:            15Gi       3.2Gi       8.1Gi        50Mi       4.1Gi        11Gi
+Swap:          4.0Gi       512Mi       3.5Gi
 /dev/sdd       1007G   54G  903G   6% /
 inotify: watches=1048576 instances=8192
 v3.19.0+g3d8990f

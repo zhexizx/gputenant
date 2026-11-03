@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 按顺序跑 Day 4-5：环境检查 → 基线 → 方案 A → 方案 B → 告警。任何一步失败就停止。
+# 按顺序跑：环境检查 → 基线 → 方案 A → 方案 B → webhook 故障 → 告警。任何一步失败就停止。
 source "$(dirname "$0")/lib.sh"
 mkdir -p "$OUT_ROOT"
 exec > >(tee "$OUT_ROOT/run.log") 2>&1
@@ -13,7 +13,7 @@ export LAB_LOCK_HELD=1
 tail -1 "$OUT_ROOT/verify-env.txt"
 
 overall=0
-for step in "degrade.sh baseline" "degrade.sh fix-a" "degrade.sh fix-b" "alert.sh"; do
+for step in "degrade.sh baseline" "degrade.sh fix-a" "degrade.sh fix-b" "webhook-down.sh" "alert.sh"; do
   log "=== $step"
   # shellcheck disable=SC2086
   bash "$ROOT/experiments/"$step; rc=$?

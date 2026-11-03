@@ -1,0 +1,5 @@
+# baseline 开始: 2026-11-03T11:18:27+11:00
+
+[11:18:27] 前置检查
+
+ABORT: 有其他测试或环境脚本在运行：232260 /usr/bin/bash -c source /home/Zecy/.claude/shell-snapshots/snapshot-bash-1793591407278-6amtvs.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'cd ~/kamaji-hami-lab && S=/tmp/claude-1000/-home-Zecy/b4dbc406-77e0-4d57-a3f9-0eb1a4b45d65/scratchpad && ./scripts/verify-from-scratch.sh > $S/final-scratch.log 2>&1; echo "from-scratch exit=$?"; ./experiments/run.sh > $S/final-exp.log 2>&1; echo "experiments exit=$?"' < /dev/null && pwd -P >| /tmp/claude-2ff5-cwd

@@ -22,13 +22,12 @@ finish() {
 trap finish EXIT
 trap 'exit 130' INT TERM
 
-# 先保存输出再判断：lib.sh 开了 pipefail，被拒绝时 kubectl 返回 1，管道会判成失败（troubleshooting 第 8 条）。
-vap_active() {
-  local out; out=$(tk "$T" create --dry-run=server -f "$EXP_DIR/vap-gate-pod.yaml" 2>&1)
-  [[ "$out" == *'GPU Pod must use hami-scheduler'* ]]
-}
 case "$EXP" in
+  baseline)
+    remove_vap
+    ;;
   fix-a)
+    remove_vap
     log "方案 A：failurePolicy=Fail"
     tk "$T" patch mutatingwebhookconfiguration "$WEBHOOK" --type=json \
       -p '[{"op":"replace","path":"/webhooks/0/failurePolicy","value":"Fail"}]' || abort "patch 失败"
@@ -37,8 +36,8 @@ case "$EXP" in
     ;;
   fix-b)
     log "方案 B：ValidatingAdmissionPolicy"
-    tk "$T" apply -f "$EXP_DIR/require-hami-scheduler.yaml" || abort "apply 失败"
-    wait_until 90 "准入策略已生效" vap_active || abort "准入策略没有生效"
+    # 默认部署已经带着它，这里再 apply 一次，确认用的是仓库里的版本。
+    ensure_vap || abort "准入策略没有生效"
     ;;
 esac
 tk "$T" get mutatingwebhookconfiguration "$WEBHOOK" -o yaml | grep -E 'failurePolicy|timeoutSeconds' | tee "$OUT/webhook-policy.txt"
@@ -59,7 +58,7 @@ rc=0
 if [[ "$EXP" == fix-b ]]; then
   # 计划对方案 B 的要求：隧道正常时能创建，断开时被明确拒绝。
   [[ "$(col fix-b 对照 over-card 6)" == 是 ]] && echo "CHECK PASS: 隧道正常时 GPU Pod 能创建" || { echo "CHECK FAIL: 隧道正常时 GPU Pod 没有创建"; rc=1; }
-  for p in over-card gpu-only; do
+  for p in over-card gpu-only gpu-init; do
     if [[ "$(col fix-b 故障 "$p" 6)" == 否 && "$(col fix-b 故障 "$p" 12)" == *'GPU Pod must use hami-scheduler'* ]]; then
       echo "CHECK PASS: 隧道断开时 $p 被明确拒绝"
     else

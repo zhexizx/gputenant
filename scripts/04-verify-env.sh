@@ -50,6 +50,13 @@ else
   ok "HAMi 在用本地镜像"
 fi
 
+log "默认防护"
+vap_denies "$t" && ok "准入策略生效：跳过 webhook 的 GPU Pod 被拒绝" || bad "准入策略没有生效"
+prom_rules_loaded "$t" && ok "告警规则已加载：${GUARDRAIL_ALERTS[*]}" || bad "告警规则没有全部加载"
+# 刚重启过 kube-proxy，信号可能要等一次抓取才更新，所以轮询。
+wait_until 120 "告警依赖的信号都是正常值" prom_signals_ok "$t" && ok "告警依赖的信号都是正常值" || bad "隧道探测、hami-scheduler 或 agent 指标不正常"
+wait_until 120 "没有 firing 的告警" prom_none_firing "$t" && ok "没有 firing 的告警" || bad "有告警在 firing"
+
 log "版本记录"
 mkdir -p "$ROOT/results/env"
 {

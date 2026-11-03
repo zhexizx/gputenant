@@ -1,0 +1,83 @@
+# TC-09: 默认防护：准入策略和告警
+# 开始: 2026-11-03T11:17:25+11:00
+
+===== tenant-a =====
+
+$ tk tenant-a get validatingadmissionpolicy,validatingadmissionpolicybinding require-hami-scheduler
+NAME                                                                            VALIDATIONS   PARAMKIND   AGE
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler   1             <unset>     7m50s
+
+NAME                                                                                   POLICYNAME               PARAMREF   AGE
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler   require-hami-scheduler   <unset>    7m50s
+CHECK PASS: tenant-a 有准入策略和绑定
+
+$ kubectl create --dry-run=server（tc09-gpu，webhook=webhook，GPU 在 containers）
+hami-scheduler
+CHECK PASS: tenant-a 正常的 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-init，webhook=webhook，GPU 在 init）
+hami-scheduler
+CHECK PASS: tenant-a 正常的 init 容器 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-skip-gpu，webhook=skip，GPU 在 containers）
+The pods "tc09-skip-gpu" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-a 跳过 webhook 的 GPU Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-init，webhook=skip，GPU 在 init）
+The pods "tc09-skip-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-a 跳过 webhook、只在 init 容器申请 GPU 的 Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-plain，webhook=skip，GPU 在 none）
+default-scheduler
+CHECK PASS: tenant-a 跳过 webhook 的普通 Pod：允许 (= 0|default-scheduler)
+
+$ Prometheus 规则和告警（tenant-a）
+KonnectivityAgentDisconnected ok inactive
+ApiserverToNodePathDown ok inactive
+HamiWebhookDown ok inactive
+HamiWebhookFailOpen ok inactive
+CHECK PASS: tenant-a 告警规则已加载：KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+CHECK PASS: tenant-a 告警依赖的信号都是正常值
+CHECK PASS: tenant-a 没有 firing 的告警
+
+===== tenant-b =====
+
+$ tk tenant-b get validatingadmissionpolicy,validatingadmissionpolicybinding require-hami-scheduler
+NAME                                                                            VALIDATIONS   PARAMKIND   AGE
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler   1             <unset>     3m24s
+
+NAME                                                                                   POLICYNAME               PARAMREF   AGE
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler   require-hami-scheduler   <unset>    3m24s
+CHECK PASS: tenant-b 有准入策略和绑定
+
+$ kubectl create --dry-run=server（tc09-gpu，webhook=webhook，GPU 在 containers）
+hami-scheduler
+CHECK PASS: tenant-b 正常的 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-init，webhook=webhook，GPU 在 init）
+hami-scheduler
+CHECK PASS: tenant-b 正常的 init 容器 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-skip-gpu，webhook=skip，GPU 在 containers）
+The pods "tc09-skip-gpu" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-b 跳过 webhook 的 GPU Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-init，webhook=skip，GPU 在 init）
+The pods "tc09-skip-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-b 跳过 webhook、只在 init 容器申请 GPU 的 Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-plain，webhook=skip，GPU 在 none）
+default-scheduler
+CHECK PASS: tenant-b 跳过 webhook 的普通 Pod：允许 (= 0|default-scheduler)
+
+$ Prometheus 规则和告警（tenant-b）
+KonnectivityAgentDisconnected ok inactive
+ApiserverToNodePathDown ok inactive
+HamiWebhookDown ok inactive
+HamiWebhookFailOpen ok inactive
+CHECK PASS: tenant-b 告警规则已加载：KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+CHECK PASS: tenant-b 告警依赖的信号都是正常值
+CHECK PASS: tenant-b 没有 firing 的告警
+
+# 结束: 2026-11-03T11:17:32+11:00
+RESULT TC-09 PASS (18 checks, 0 failed)

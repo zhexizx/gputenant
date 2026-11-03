@@ -1,0 +1,6 @@
+apiserver_admission_webhook_fail_open_count{name="vgpu.hami.io",type="admit"} 24
+apiserver_admission_webhook_rejection_count{error_type="calling_webhook_error",name="vgpu.hami.io",operation="CREATE",rejection_code="503",type="admit"} 8
+apiserver_admission_webhook_request_total{code="200",name="vgpu.hami.io",operation="CREATE",rejected="false",type="admit"} 36
+apiserver_admission_webhook_request_total{code="200",name="vgpu.hami.io",operation="UPDATE",rejected="false",type="admit"} 63
+apiserver_admission_webhook_request_total{code="503",name="vgpu.hami.io",operation="CREATE",rejected="false",type="admit"} 24
+apiserver_admission_webhook_request_total{code="503",name="vgpu.hami.io",operation="CREATE",rejected="true",type="admit"} 8

@@ -1,0 +1,139 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-03T00:59:37Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "plain-probe",
+                "namespace": "default",
+                "resourceVersion": "14508",
+                "uid": "54e1198e-c558-438b-8990-5f66a1451859"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-03T00:59:37Z",
+            "message": "Successfully assigned default/plain-probe to tenant-b-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:59:37Z",
+                "name": "plain-probe.18e46328ab365d8f",
+                "namespace": "default",
+                "resourceVersion": "14510",
+                "uid": "015eb9bf-3b37-4b0e-9ec0-8162a14cc1e3"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "default-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-03T00:59:38Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{app}",
+                "kind": "Pod",
+                "name": "plain-probe",
+                "namespace": "default",
+                "resourceVersion": "14509",
+                "uid": "54e1198e-c558-438b-8990-5f66a1451859"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-03T00:59:38Z",
+            "message": "Container image \"busybox:1.37\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:59:38Z",
+                "name": "plain-probe.18e46328e24d524f",
+                "namespace": "default",
+                "resourceVersion": "14519",
+                "uid": "be511d02-1db4-426a-a3dc-702dce53bc1b"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-03T00:59:38Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{app}",
+                "kind": "Pod",
+                "name": "plain-probe",
+                "namespace": "default",
+                "resourceVersion": "14509",
+                "uid": "54e1198e-c558-438b-8990-5f66a1451859"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-03T00:59:38Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:59:38Z",
+                "name": "plain-probe.18e46328e52cb960",
+                "namespace": "default",
+                "resourceVersion": "14521",
+                "uid": "b69b385b-9b99-414a-b650-44f7f79019fa"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-03T00:59:39Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{app}",
+                "kind": "Pod",
+                "name": "plain-probe",
+                "namespace": "default",
+                "resourceVersion": "14509",
+                "uid": "54e1198e-c558-438b-8990-5f66a1451859"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-03T00:59:39Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:59:39Z",
+                "name": "plain-probe.18e46328f3b2a5cf",
+                "namespace": "default",
+                "resourceVersion": "14522",
+                "uid": "ace0bad7-e233-406e-bfcb-218cb12412e6"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Normal"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

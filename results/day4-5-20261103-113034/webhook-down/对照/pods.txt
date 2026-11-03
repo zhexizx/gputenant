@@ -1,0 +1,6 @@
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-init          1/1     Running   0          61s   10.244.66.165   tenant-b-worker   <none>           <none>
+gpu-only          1/1     Running   0          61s   10.244.66.164   tenant-b-worker   <none>           <none>
+nvml-mock-s5f9c   2/2     Running   0          29m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s   <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s   10.244.66.163   tenant-b-worker   <none>           <none>

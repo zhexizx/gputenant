@@ -1,0 +1,72 @@
+Name:             gpu-only
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             tenant-b-worker/172.18.0.7
+Start Time:       Tue, 03 Nov 2026 11:20:06 +1100
+Labels:           hami.io/vgpu-node=tenant-b-worker
+Annotations:      cni.projectcalico.org/containerID: 402f84c1a70396aa1f43c31ba452b6e8890ca1744f6a47ffe2c1a5a2d7d46f33
+                  cni.projectcalico.org/podIP: 10.244.66.142/32
+                  cni.projectcalico.org/podIPs: 10.244.66.142/32
+                  hami.io/bind-phase: success
+                  hami.io/bind-time: 1793665203
+                  hami.io/vgpu-devices-allocated: GPU-00000074-0000-0000-0000-000000000001,NVIDIA,16384,100:;
+                  hami.io/vgpu-devices-to-allocate: ;;
+                  hami.io/vgpu-node: tenant-b-worker
+                  hami.io/vgpu-time: 1793665203
+Status:           Running
+IP:               10.244.66.142
+IPs:
+  IP:  10.244.66.142
+Containers:
+  app:
+    Container ID:  containerd://ba390c092f46c568a19c1832a88ead4e5db28a534dd756353f4b61e99859a5b8
+    Image:         busybox:1.37
+    Image ID:      docker.io/library/busybox@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sleep
+      infinity
+    State:          Running
+      Started:      Tue, 03 Nov 2026 11:20:10 +1100
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      nvidia.com/gpu:       1
+      nvidia.com/gpucores:  100
+    Requests:
+      nvidia.com/gpu:       1
+      nvidia.com/gpucores:  100
+    Environment:
+      CUDA_DISABLE_CONTROL:  true
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-x8xvv (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-x8xvv:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason            Age   From            Message
+  ----    ------            ----  ----            -------
+  Normal  Scheduled         60s   hami-scheduler  Successfully assigned default/gpu-only to tenant-b-worker
+  Normal  FilteringSucceed  62s   hami-scheduler  find fit node(tenant-b-worker), 0 nodes not fit, 1 nodes fit(tenant-b-worker:0.00)
+  Normal  BindingSucceed    60s   hami-scheduler  Successfully binding node [tenant-b-worker] to default/gpu-only
+  Normal  Pulling           59s   kubelet         spec.containers{app}: Pulling image "busybox:1.37"
+  Normal  Pulled            55s   kubelet         spec.containers{app}: Successfully pulled image "busybox:1.37" in 1.195s (3.303s including waiting). Image size: 2222118 bytes.
+  Normal  Created           55s   kubelet         spec.containers{app}: Container created
+  Normal  Started           55s   kubelet         spec.containers{app}: Container started

@@ -1,0 +1,17 @@
+# webhook-down 开始: 2026-11-03T11:29:31+11:00
+
+[11:29:31] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+ABORT: 开始前就有告警在 firing
+
+[11:29:34] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+ok: 恢复后故障状态告警全部解除
+CHECK PASS: 恢复后告警已解除
+# webhook-down 结束: 2026-11-03T11:30:11+11:00 rc=1

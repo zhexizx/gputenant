@@ -1,0 +1,13 @@
+HamiWebhookDown: firing，首次观察到在缩容后 160s，activeAt 在缩容后 16s
+HamiWebhookFailOpen: firing，首次观察到在缩容后 160s，activeAt 在缩容后 -149s
+ApiserverToNodePathDown: 没有触发（缩容后观察到 197s）
+KonnectivityAgentDisconnected: 没有触发（缩容后观察到 197s）
+--- apiserver 的 webhook 指标（前 → 后）
+1c1
+< apiserver_admission_webhook_fail_open_count{name="vgpu.hami.io",type="admit"} 16
+---
+> apiserver_admission_webhook_fail_open_count{name="vgpu.hami.io",type="admit"} 24
+5c5
+< apiserver_admission_webhook_request_total{code="503",name="vgpu.hami.io",operation="CREATE",rejected="false",type="admit"} 16
+---
+> apiserver_admission_webhook_request_total{code="503",name="vgpu.hami.io",operation="CREATE",rejected="false",type="admit"} 24

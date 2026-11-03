@@ -1,0 +1,134 @@
+{
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"name\":\"over-card\",\"namespace\":\"default\"},\"spec\":{\"containers\":[{\"command\":[\"sleep\",\"infinity\"],\"env\":[{\"name\":\"CUDA_DISABLE_CONTROL\",\"value\":\"true\"}],\"image\":\"busybox:1.37\",\"name\":\"app\",\"resources\":{\"limits\":{\"nvidia.com/gpu\":1,\"nvidia.com/gpucores\":10,\"nvidia.com/gpumem\":20000}}}]}}\n"
+        },
+        "creationTimestamp": "2026-11-03T00:23:21Z",
+        "generation": 1,
+        "name": "over-card",
+        "namespace": "default",
+        "resourceVersion": "5269",
+        "uid": "4a84f701-34b2-48b2-b18d-9b8892527323"
+    },
+    "spec": {
+        "containers": [
+            {
+                "command": [
+                    "sleep",
+                    "infinity"
+                ],
+                "env": [
+                    {
+                        "name": "CUDA_DISABLE_CONTROL",
+                        "value": "true"
+                    }
+                ],
+                "image": "busybox:1.37",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "app",
+                "resources": {
+                    "limits": {
+                        "nvidia.com/gpu": "1",
+                        "nvidia.com/gpucores": "10",
+                        "nvidia.com/gpumem": "20k"
+                    },
+                    "requests": {
+                        "nvidia.com/gpu": "1",
+                        "nvidia.com/gpucores": "10",
+                        "nvidia.com/gpumem": "20k"
+                    }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                    {
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                        "name": "kube-api-access-vtbp2",
+                        "readOnly": true
+                    }
+                ]
+            }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "priority": 0,
+        "restartPolicy": "Always",
+        "schedulerName": "hami-scheduler",
+        "securityContext": {},
+        "serviceAccount": "default",
+        "serviceAccountName": "default",
+        "terminationGracePeriodSeconds": 30,
+        "tolerations": [
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "tolerationSeconds": 300
+            },
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "tolerationSeconds": 300
+            }
+        ],
+        "volumes": [
+            {
+                "name": "kube-api-access-vtbp2",
+                "projected": {
+                    "defaultMode": 420,
+                    "sources": [
+                        {
+                            "serviceAccountToken": {
+                                "expirationSeconds": 3607,
+                                "path": "token"
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "items": [
+                                    {
+                                        "key": "ca.crt",
+                                        "path": "ca.crt"
+                                    }
+                                ],
+                                "name": "kube-root-ca.crt"
+                            }
+                        },
+                        {
+                            "downwardAPI": {
+                                "items": [
+                                    {
+                                        "fieldRef": {
+                                            "apiVersion": "v1",
+                                            "fieldPath": "metadata.namespace"
+                                        },
+                                        "path": "namespace"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-11-03T00:23:21Z",
+                "message": "0/1 nodes are available: 1 2/2 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.",
+                "observedGeneration": 1,
+                "reason": "Unschedulable",
+                "status": "False",
+                "type": "PodScheduled"
+            }
+        ],
+        "phase": "Pending",
+        "qosClass": "BestEffort"
+    }
+}

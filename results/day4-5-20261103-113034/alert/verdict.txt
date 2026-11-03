@@ -1,0 +1,4 @@
+KonnectivityAgentUnavailable: 没有触发（隧道断开观察到 349s）
+KonnectivityAgentDisconnected: firing，阻断后 134s
+ApiserverToNodePathDown: firing，阻断后 116s
+恢复后告警已解除
