@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
@@ -118,12 +117,7 @@ func (s monitoringStep) Apply(ctx context.Context) error {
 			if err != nil {
 				return false, err
 			}
-			for _, a := range firing {
-				if slices.Contains(StateAlerts, a) {
-					return false, nil
-				}
-			}
-			return true, nil
+			return len(StateAlertsIn(firing)) == 0, nil
 		})
 }
 
@@ -205,6 +199,12 @@ func promQuery(ctx context.Context, e *Env, q string) (string, error) {
 
 // promSignalsOK：告警依赖的三个信号都是正常值。
 func promSignalsOK(ctx context.Context, e *Env) (bool, error) {
+	bad, err := promBadSignal(ctx, e)
+	return bad == "", err
+}
+
+// promBadSignal 返回第一个不正常的信号和它的值，都正常时返回 ""。
+func promBadSignal(ctx context.Context, e *Env) (string, error) {
 	for _, q := range []string{
 		`up{job="tunnel-probe"}`,
 		`up{job="hami-scheduler"}`,
@@ -212,13 +212,13 @@ func promSignalsOK(ctx context.Context, e *Env) (bool, error) {
 	} {
 		v, err := promQuery(ctx, e, q)
 		if err != nil {
-			return false, err
+			return "", err
 		}
 		if v != "1" {
-			return false, nil
+			return fmt.Sprintf("%s=%q, want 1", q, v), nil
 		}
 	}
-	return true, nil
+	return "", nil
 }
 
 // FiringAlerts 返回租户 Prometheus 里正在 firing 的告警名。

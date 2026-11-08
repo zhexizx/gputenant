@@ -1,0 +1,23 @@
+# 2026-11-08T20:44:15+11:00 hami-scheduler 缩到 0，模拟调度器和 webhook 都挂掉
+deployment.apps/hami-scheduler scaled
+pod/hami-scheduler-cccd69798-jk278 condition met
+[20:44:16]   triggered Kamaji reconcile, waiting 30s
+[20:44:46]   restarted lab-kube-proxy, waiting 20s
+[20:45:06]   ok: kube-proxy stable after restart
+[20:45:06] ok   kube-proxy stable after reconcile and restart
+[20:45:07] ok   ClusterIP rules present
+[20:45:07] ok   no Kamaji-managed kube-proxy
+[20:45:07] ok   API reachable
+[20:45:07] ok   node Ready
+[20:45:07]   nvidia.com/gpu=20 (t4×2)
+[20:45:07] ok   nvidia.com/gpu allocatable
+[20:45:07] ok   tunnel (apiserver → konnectivity → kubelet)
+[20:45:07] FAIL hami-scheduler Ready: hami-scheduler readyReplicas=0
+[20:45:07] ok   HAMi uses local images
+[20:45:07] FAIL gpumem Pod scheduled by hami-scheduler and Running: apply Pod/gputenant-verify: pods "gputenant-verify" is forbidden: ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+[20:45:07] ok   admission policy denies GPU Pods that skip the webhook
+[20:45:08] ok   alert rules loaded
+[20:47:08] FAIL alert signals healthy: timeout (2m0s) waiting for tunnel probe, hami-scheduler and agent signals healthy: last error: client rate limiter Wait returned an error: context deadline exceeded
+[20:49:08] FAIL no state alert firing: timeout (2m0s) waiting for no state alert firing: last error: client rate limiter Wait returned an error: context deadline exceeded: firing HamiWebhookDown
+Error: tenant tenant-b: 4 check(s) failed
+exit=1

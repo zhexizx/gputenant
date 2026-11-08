@@ -1,0 +1,21 @@
+# gputenant verify 用的冒烟 Pod：申请一份 gpumem，必须由 hami-scheduler 调度并 Running。
+# CUDA_DISABLE_CONTROL：驱动是 nvml-mock 模拟的，不让 HAMi-core 拦截 CUDA 调用。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gputenant-verify
+  namespace: default
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]
+      env:
+        - name: CUDA_DISABLE_CONTROL
+          value: "true"
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+          nvidia.com/gpumem: 1000
+          nvidia.com/gpucores: 10

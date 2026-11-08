@@ -1,0 +1,38 @@
+# TC-05: 3 个 Pod 共享一张卡
+# 开始: 2026-11-08T21:07:33+11:00
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+
+$ tk tenant-a get pods -o wide
+NAME              READY   STATUS    RESTARTS   AGE     IP               NODE              NOMINATED NODE   READINESS GATES
+gpu-share-1       1/1     Running   0          13s     10.244.175.209   tenant-a-worker   <none>           <none>
+gpu-share-2       1/1     Running   0          11s     10.244.175.210   tenant-a-worker   <none>           <none>
+gpu-share-3       1/1     Running   0          9s      10.244.175.211   tenant-a-worker   <none>           <none>
+nvml-mock-x2q5c   2/2     Running   0          3h48m   10.244.175.197   tenant-a-worker   <none>           <none>
+
+$ kubectl describe node | grep nvidia.com/gpu
+                    nvidia.com/gpu.present=true
+  nvidia.com/gpu:     10
+  nvidia.com/gpu:     10
+  nvidia.com/gpu     3           3
+CHECK PASS: gpu-share-1 Running (= Running)
+CHECK PASS: gpu-share-1 所在节点 (= tenant-a-worker)
+gpu-share-1 -> GPU-12345678-1234-1234-1234-123456780000
+CHECK PASS: gpu-share-2 Running (= Running)
+CHECK PASS: gpu-share-2 所在节点 (= tenant-a-worker)
+gpu-share-2 -> GPU-12345678-1234-1234-1234-123456780000
+CHECK PASS: gpu-share-3 Running (= Running)
+CHECK PASS: gpu-share-3 所在节点 (= tenant-a-worker)
+gpu-share-3 -> GPU-12345678-1234-1234-1234-123456780000
+CHECK PASS: 分配到了 GPU UUID
+CHECK PASS: 分配到同一张卡 (= 1)
+
+# 结束: 2026-11-08T21:07:37+11:00
+RESULT TC-05 PASS (8 checks, 0 failed)

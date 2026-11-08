@@ -1,0 +1,27 @@
+# 2026-11-08T20:49:10+11:00 恢复 hami-scheduler
+deployment.apps/hami-scheduler scaled
+Waiting for deployment "hami-scheduler" rollout to finish: 0 of 1 updated replicas are available...
+deployment "hami-scheduler" successfully rolled out
+[20:49:22]   triggered Kamaji reconcile, waiting 30s
+[20:49:52]   restarted lab-kube-proxy, waiting 20s
+[20:50:12]   ok: kube-proxy stable after restart
+[20:50:12] ok   kube-proxy stable after reconcile and restart
+[20:50:12] ok   ClusterIP rules present
+[20:50:12] ok   no Kamaji-managed kube-proxy
+[20:50:12] ok   API reachable
+[20:50:12] ok   node Ready
+[20:50:12]   nvidia.com/gpu=20 (t4×2)
+[20:50:12] ok   nvidia.com/gpu allocatable
+[20:50:13] ok   tunnel (apiserver → konnectivity → kubelet)
+[20:50:13] ok   hami-scheduler Ready
+[20:50:13] ok   HAMi uses local images
+[20:50:23]   ok: verify Pod Running
+[20:50:23] ok   gpumem Pod scheduled by hami-scheduler and Running
+[20:50:23] ok   admission policy denies GPU Pods that skip the webhook
+[20:50:23] ok   alert rules loaded
+[20:50:24]   ok: tunnel probe, hami-scheduler and agent signals healthy
+[20:50:24] ok   alert signals healthy
+[20:50:24]   ok: no state alert firing
+[20:50:24] ok   no state alert firing
+tenant tenant-b verified in 1m2s
+exit=0

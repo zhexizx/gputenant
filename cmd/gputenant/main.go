@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -15,8 +16,6 @@ import (
 
 	"github.com/zhexizx/gputenant/internal/tenant"
 )
-
-var errNotImplemented = errors.New("not implemented yet")
 
 // globalFlags 是所有子命令共用的参数。
 type globalFlags struct {
@@ -45,7 +44,7 @@ func newRootCmd() *cobra.Command {
 	pf.StringVar(&g.hamiChart, "hami-chart", filepath.Join(home, "src/HAMi/charts/hami"), "HAMi chart directory checked out at the pinned commit")
 	pf.StringVar(&g.docker, "docker", "docker", "docker binary")
 	pf.StringVar(&g.helm, "helm", "helm", "helm binary")
-	root.AddCommand(newCreateCmd(g), newDeleteCmd(g), newStatusCmd(), newVerifyCmd())
+	root.AddCommand(newCreateCmd(g), newDeleteCmd(g), newStatusCmd(g), newVerifyCmd(g))
 	return root
 }
 
@@ -114,6 +113,9 @@ func newCreateCmd(g *globalFlags) *cobra.Command {
 			if err := e.PreflightCreate(ctx); err != nil {
 				return fmt.Errorf("preflight: %w", err)
 			}
+			if err := e.CheckGPUMatches(ctx); err != nil {
+				return err
+			}
 			start := time.Now()
 			if err := tenant.Create(ctx, tenant.Steps(e), report); err != nil {
 				return err
@@ -151,20 +153,106 @@ func newDeleteCmd(g *globalFlags) *cobra.Command {
 	}
 }
 
-func newStatusCmd() *cobra.Command {
+func newStatusCmd(g *globalFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "status <tenant>",
 		Short: "Show per-step state, GPU capacity and firing alerts (read-only)",
 		Args:  cobra.ExactArgs(1),
-		RunE:  func(*cobra.Command, []string) error { return errNotImplemented },
+		RunE: func(cmd *cobra.Command, args []string) error {
+			e, err := newEnv(g, tenant.Config{Tenant: args[0]})
+			if err != nil {
+				return err
+			}
+			ctx, cancel := signalContext()
+			defer cancel()
+			start := time.Now()
+			if err := e.LoadGPU(ctx); err != nil {
+				fmt.Printf("gpu config: %v\n", err)
+			}
+			states := tenant.Status(ctx, tenant.Steps(e))
+			done := 0
+			for _, s := range states {
+				switch {
+				case s.Err != nil:
+					fmt.Printf("  %-18s error    %v\n", s.Name, s.Err)
+				case s.Done:
+					done++
+					fmt.Printf("  %-18s done\n", s.Name)
+				default:
+					fmt.Printf("  %-18s pending\n", s.Name)
+				}
+			}
+			fmt.Printf("steps:  %d/%d done\n", done, len(states))
+			if e.Cfg.GPUCount > 0 {
+				fmt.Printf("gpu:    %s, expected nvidia.com/gpu=%d\n", tenant.GPU{Profile: e.Cfg.GPUProfile, Count: e.Cfg.GPUCount}, e.Cfg.ExpectedGPU())
+			} else {
+				fmt.Println("gpu:    nvml-mock not installed")
+			}
+			if ng, err := e.WorkerGPU(ctx); err != nil {
+				fmt.Printf("node:   unavailable: %v\n", shortErr(err))
+			} else {
+				fmt.Printf("node:   nvidia.com/gpu capacity=%d allocatable=%d\n", ng.Capacity, ng.Allocatable)
+			}
+			alerts, alertErr := e.FiringAlertsQuick(ctx)
+			if err := alertErr; err != nil {
+				fmt.Printf("alerts: unavailable: %v\n", shortErr(err))
+			} else if len(alerts) == 0 {
+				fmt.Println("alerts: none firing")
+			} else {
+				fmt.Printf("alerts: firing %s\n", strings.Join(alerts, " "))
+			}
+			fmt.Printf("(%s)\n", time.Since(start).Round(100*time.Millisecond))
+			if done != len(states) {
+				return fmt.Errorf("tenant %s not ready: %d/%d steps done", args[0], done, len(states))
+			}
+			// 步骤都完成不代表现在是好的：调度器或隧道挂掉时 Check 照样为 true，要看告警。
+			if bad := tenant.StateAlertsIn(alerts); len(bad) > 0 {
+				return fmt.Errorf("tenant %s degraded: %s firing", args[0], strings.Join(bad, " "))
+			}
+			return nil
+		},
 	}
 }
 
-func newVerifyCmd() *cobra.Command {
+// shortErr 把“没有 kubeconfig”这种常见情况说短一点。
+func shortErr(err error) string {
+	if errors.Is(err, os.ErrNotExist) {
+		return "tenant kubeconfig not found"
+	}
+	return err.Error()
+}
+
+func newVerifyCmd(g *globalFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "verify <tenant>",
-		Short: "Smoke-test a tenant",
+		Short: "Smoke-test a tenant (restarts kube-proxy and runs a short-lived GPU Pod)",
 		Args:  cobra.ExactArgs(1),
-		RunE:  func(*cobra.Command, []string) error { return errNotImplemented },
+		RunE: func(cmd *cobra.Command, args []string) error {
+			e, err := newEnv(g, tenant.Config{Tenant: args[0]})
+			if err != nil {
+				return err
+			}
+			ctx, cancel := signalContext()
+			defer cancel()
+			if err := e.LoadGPU(ctx); err != nil {
+				return err
+			}
+			start := time.Now()
+			failed := tenant.Verify(ctx, tenant.VerifyChecks(e), func(name string, err error) {
+				if err != nil {
+					fmt.Printf("[%s] FAIL %s: %v\n", time.Now().Format("15:04:05"), name, err)
+				} else {
+					fmt.Printf("[%s] ok   %s\n", time.Now().Format("15:04:05"), name)
+				}
+			})
+			if ctx.Err() != nil {
+				return fmt.Errorf("interrupted")
+			}
+			if failed > 0 {
+				return fmt.Errorf("tenant %s: %d check(s) failed", args[0], failed)
+			}
+			fmt.Printf("tenant %s verified in %s\n", args[0], time.Since(start).Round(time.Second))
+			return nil
+		},
 	}
 }

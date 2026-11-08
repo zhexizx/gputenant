@@ -19,3 +19,6 @@ var PrometheusRBAC []byte
 
 //go:embed guardrails/prometheus-values.yaml
 var PrometheusValues []byte
+
+//go:embed verify/gpumem-pod.yaml
+var VerifyPod []byte
