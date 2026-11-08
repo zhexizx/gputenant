@@ -1,0 +1,28 @@
+# 2026-11-08T20:58:47+11:00 hami-scheduler 缩到 0，轮询 status 直到告警 firing
+deployment.apps/hami-scheduler scaled
+# 2026-11-08T21:00:40+11:00 第 9 次（缩容后约 90 秒）
+  tenants-namespace  done
+  control-plane      done
+  admin-kubeconfig   done
+  api-proxy          done
+  kubeconfig         done
+  worker-node        done
+  join               done
+  kube-proxy         done
+  calico             done
+  images             done
+  nvml-mock          done
+  hami               done
+  admission-policy   done
+  monitoring         done
+steps:  14/14 done
+gpu:    t4×2, expected nvidia.com/gpu=20
+node:   nvidia.com/gpu capacity=20 allocatable=20
+alerts: firing HamiWebhookDown
+(2.6s)
+Error: tenant tenant-b degraded: HamiWebhookDown firing
+exit=1
+# 2026-11-08T21:00:40+11:00 恢复
+deployment.apps/hami-scheduler scaled
+Waiting for deployment "hami-scheduler" rollout to finish: 0 of 1 updated replicas are available...
+deployment "hami-scheduler" successfully rolled out

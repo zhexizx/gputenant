@@ -1,0 +1,41 @@
+# TC-02: 节点和 Konnectivity 隧道（tenant-a）
+# 开始: 2026-11-08T21:07:18+11:00
+
+$ tk tenant-a get nodes -o wide
+NAME              STATUS   ROLES    AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                             CONTAINER-RUNTIME
+tenant-a-worker   Ready    <none>   3h50m   v1.36.4   172.18.0.5    <none>        Debian GNU/Linux 13 (trixie)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+$ tk tenant-a -n kube-system get pods
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-5b84fd7749-fgx8z   1/1     Running   0          3h49m
+calico-node-fpxqv                          1/1     Running   0          3h49m
+coredns-695c5d47b8-4fnfr                   1/1     Running   0          3h50m
+coredns-695c5d47b8-4v2k5                   1/1     Running   0          3h50m
+hami-device-plugin-rr7r6                   2/2     Running   0          3h48m
+hami-scheduler-cccd69798-rxm74             2/2     Running   0          3h48m
+konnectivity-agent-v44sz                   1/1     Running   0          3h49m
+lab-kube-proxy-x5cvl                       1/1     Running   0          2m9s
+
+$ tk tenant-a get mutatingwebhookconfigurations
+NAME           WEBHOOKS   AGE
+hami-webhook   1          3h48m
+    name: hami-webhook
+        name: hami-scheduler
+    failurePolicy: Ignore
+    name: vgpu.hami.io
+    timeoutSeconds: 10
+CHECK PASS: 节点 Ready (= True)
+CHECK PASS: konnectivity-agent Ready (= 1)
+
+$ kubectl -n kube-system logs ds/konnectivity-agent --tail=5
+I1108 10:07:19.282685       1 server_counter.go:57] "Determined server count" serverCount=1 source="KNP server response headers"
+I1108 10:07:19.632054       1 client.go:373] "[tracing] recv packet" type="DATA"
+I1108 10:07:19.632107       1 client.go:485] "received DATA" connectionID=6
+I1108 10:07:19.632227       1 client.go:611] "write to remote" connectionID=6 lastData=200 dataSize=200
+I1108 10:07:19.632885       1 client.go:554] "received data from remote" bytes=106 connectionID=6
+CHECK PASS: 经隧道读取节点日志
+CHECK PASS: hami-webhook 已注册
+failurePolicy=Ignore
+
+# 结束: 2026-11-08T21:07:20+11:00
+RESULT TC-02 PASS (4 checks, 0 failed)

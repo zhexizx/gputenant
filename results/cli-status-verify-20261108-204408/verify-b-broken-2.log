@@ -1,0 +1,23 @@
+# 2026-11-08T20:51:33+11:00 修复后重测：hami-scheduler 缩到 0
+deployment.apps/hami-scheduler scaled
+pod/hami-scheduler-cccd69798-ccskt condition met
+[20:52:22]   triggered Kamaji reconcile, waiting 30s
+[20:52:52]   restarted lab-kube-proxy, waiting 20s
+[20:53:12]   ok: kube-proxy stable after restart
+[20:53:12] ok   kube-proxy stable after reconcile and restart
+[20:53:12] ok   ClusterIP rules present
+[20:53:12] ok   no Kamaji-managed kube-proxy
+[20:53:12] ok   API reachable
+[20:53:12] ok   node Ready
+[20:53:13]   nvidia.com/gpu=20 (t4×2)
+[20:53:13] ok   nvidia.com/gpu allocatable
+[20:53:13] ok   tunnel (apiserver → konnectivity → kubelet)
+[20:53:13] FAIL hami-scheduler Ready: hami-scheduler readyReplicas=0
+[20:53:13] ok   HAMi uses local images
+[20:53:13] FAIL gpumem Pod scheduled by hami-scheduler and Running: apply Pod/gputenant-verify: pods "gputenant-verify" is forbidden: ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+[20:53:13] ok   admission policy denies GPU Pods that skip the webhook
+[20:53:13] ok   alert rules loaded
+[20:55:13] FAIL alert signals healthy: timeout (2m0s) waiting for tunnel probe, hami-scheduler and agent signals healthy: up{job="hami-scheduler"}="", want 1
+[20:57:13] FAIL no state alert firing: timeout (2m0s) waiting for no state alert firing: firing HamiWebhookDown
+Error: tenant tenant-b: 4 check(s) failed
+exit=1

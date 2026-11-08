@@ -1,0 +1,8 @@
+# 跟随 source 的 lib.sh
+external-sources=true
+source-path=SCRIPTDIR
+# SC2034：lib.sh 里的变量由 source 它的脚本使用。
+# SC2154：fetch_json 用 printf -v 给调用方的变量赋值。
+# SC2100：误报，WEBHOOK=hami-webhook 是字符串不是减法。
+# SC2120：install_prometheus 的参数是可选的。
+disable=SC2034,SC2154,SC2100,SC2120

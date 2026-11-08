@@ -1,0 +1,2 @@
+Error: tenant tenant-a already has GPU a100×1, requested t4×2: pass matching --gpu-profile/--gpu-count or delete it first
+exit=1

@@ -1,0 +1,16 @@
+[21:04:37] tenants-namespace  skipped
+[21:04:37] control-plane      skipped
+[21:04:37] admin-kubeconfig   skipped
+[21:04:37] api-proxy          skipped
+[21:04:37] kubeconfig         skipped
+[21:04:37] worker-node        skipped
+[21:04:37] join               skipped
+[21:04:37] kube-proxy         skipped
+[21:04:37] calico             skipped
+[21:04:38] images             skipped
+[21:04:38] nvml-mock          skipped
+[21:04:38] hami               skipped
+[21:04:38] admission-policy   skipped
+[21:04:39] monitoring         skipped
+tenant tenant-a ready in 2s
+kubeconfig: /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-a/kubeconfig

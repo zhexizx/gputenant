@@ -17,7 +17,9 @@
 | 降级实验：隧道断开、webhook 挂掉、方案 A/B | ✅ 完成 | `docs/failure-report.md`、`results/day4-5-20261103-113034/`、`results/webhook-down-20261103-115651/` |
 | 默认防护：准入策略和 4 条告警，新租户自动部署 | ✅ 完成，告警都真实触发过 | `scripts/05-tenant-guardrails.sh`、TC-09 |
 | `gputenant create`、`delete` | ✅ 14 个 Step；kill 后重跑能接着做完，半成品租户能删干净 | `results/cli-20261108-165831/`、`docs/work-summary-2026-11-08.md` |
-| `status`、`verify`、e2e、CI、REST API、GHCR、Grafana | ⬜ 没开始 | |
+| `gputenant status`、`verify` | ✅ `status` 约 3 秒返回，有告警 firing 时判为 degraded；`verify` 在 hami-scheduler 停掉时报失败，恢复后通过 | `results/cli-status-verify-20261108-204408/` |
+| 本地 e2e、PR CI | ✅ `scripts/e2e.sh` 通过；CI（gofmt、vet、单元测试、构建、shellcheck）本地全部通过，GitHub 上还没跑过 | `results/e2e-20261108-210436/`、`results/20261108-210641/`、`.github/workflows/ci.yml` |
+| CI e2e、REST API、GHCR、Grafana | ⬜ 没开始 | |
 | 真实 GPU 验证 | ⬜ 有条件执行，见下文 | |
 
 **还没收尾的：**
@@ -30,13 +32,23 @@
 ```bash
 ./scripts/up.sh                  # 搭建环境
 ./tests/run-all.sh               # TC-00~09
+./scripts/e2e.sh                 # CLI 开通（已完成的步骤跳过）→ gputenant verify → TC-00~09
 ./experiments/run.sh             # 降级实验：基线 → 方案 A → 方案 B → webhook 故障 → 告警
 ./experiments/restore.sh         # 实验被强行中断后恢复
 ./scripts/verify-from-scratch.sh # 删除、从零重建、跑全部测试
 ./scripts/down.sh                # 只删除本实验的资源
 ```
 
-`up.sh` 会构建 `bin/gputenant` 并用它开通租户。租户 kubeconfig 在 `kubeconfigs/<租户>/`（脚本把 `GPUTENANT_HOME` 默认设为 `kubeconfigs/`；单独运行 CLI 时默认是 `~/.gputenant/`），含集群管理员凭证，已被 `.gitignore` 排除。排障记录见 `docs/troubleshooting.md`。
+`up.sh` 会构建 `bin/gputenant` 并用它开通租户。手动使用 CLI 前先 `source scripts/lib.sh`（设置 `KUBECONFIG` 和 `GPUTENANT_HOME`）：
+
+```bash
+bin/gputenant create tenant-c --gpu-profile t4 --gpu-count 2  # 可重跑，已完成的步骤跳过
+bin/gputenant status tenant-c   # 只读：每一步的状态、GPU 容量、firing 的告警
+bin/gputenant verify tenant-c   # 冒烟测试，会重启 kube-proxy、跑一个短暂的 GPU Pod
+bin/gputenant delete tenant-c
+```
+
+租户 kubeconfig 在 `kubeconfigs/<租户>/`（脚本把 `GPUTENANT_HOME` 默认设为 `kubeconfigs/`；单独运行 CLI 时默认是 `~/.gputenant/`），含集群管理员凭证，已被 `.gitignore` 排除。排障记录见 `docs/troubleshooting.md`。
 
 ## 剩余计划
 
@@ -46,11 +58,11 @@
 |---|---|---|
 | 0 | 推送并合并 `feat/default-guardrails`；GitHub 仓库改名为 `gputenant`；建好 Go 项目骨架 | 分支已合并；`go build` 通过 |
 | 1 | `gputenant create`、`delete` | 用 CLI 从零建好两个租户，TC-00~09 通过；中途 kill 掉再重跑能成功；只建了一半的租户能删干净 |
-| 2 | `status`、`verify`、e2e、GitHub Actions | CI 跑通 |
-| 3 | Gin API、GHCR 发布、Grafana 看板 | API 重启后不会误报成功；看板可以演示 |
+| 2 | `status`、`verify`、本地 e2e、PR CI | PR CI 跑通；本地 e2e 通过 |
+| 3 | Gin API、GHCR 发布、CI e2e、Grafana 看板 | API 重启后不会误报成功；CI e2e 跑通；看板可以演示 |
 | 4 | README 和 `docs/` 定稿；有时间的话做真实 GPU 验证 | 文档齐全 |
 
-第 1 块没跑通之前，Grafana 和 GHCR 往后放。
+第 1 块没跑通之前，Grafana 和 GHCR 往后放。CI e2e 从第 2 块挪到第 3 块：它要从 GHCR 拉镜像，而且测试目前假设 tenant-a 是 a100，要先改成能在单个 t4×2 租户上跑。
 
 ## 已定的设计
 
@@ -67,7 +79,7 @@
 - `create` 只开放 `--gpu-profile`（a100、t4）和 `--gpu-count`。准入策略和告警总是部署，没有关闭开关；实验需要去掉时，由 `experiments/` 的脚本临时删除。
 - API 代理端口从 16443 开始，自动找第一个没被 `*-api-proxy` 容器占用的；LB IP 从 Service 读取。
 - kubeconfig 写到 `~/.gputenant/<租户>/`。测试通过环境变量 `GPUTENANT_HOME` 找到它，默认还是 `kubeconfigs/`。
-- `status` 只读、几秒内返回：每一步的 `Check` 结果、节点的 `nvidia.com/gpu` 容量、正在 firing 的告警。
+- `status` 只读、几秒内返回：每一步的 `Check` 结果、节点的 `nvidia.com/gpu` 容量、正在 firing 的告警。步骤没完成或有状态告警 firing 时退出码非 0。期望的 GPU 数从租户里 nvml-mock 的 Helm release 读回，所以 `status`、`verify` 不需要 `--gpu-*` 参数；`create` 的参数和已装的不一致时直接报错。
 - `verify` 是冒烟测试：相当于 `04-verify-env.sh`，再加两项：一个申请 `gpumem` 的 Pod 由 `hami-scheduler` 调度并 Running；用 dry-run 确认跳过 webhook 的 GPU Pod 被准入策略拒绝。完整的 TC 交给 e2e。
 - Kubernetes 操作用 `client-go` 和 dynamic client；Docker 和 Helm 调用命令行，封装在接口后面。
 

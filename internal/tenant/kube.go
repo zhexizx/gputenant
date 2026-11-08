@@ -153,14 +153,20 @@ func DecodeYAML(data []byte) ([]*unstructured.Unstructured, error) {
 	}
 }
 
+// pollInterval 是 waitUntil 的轮询间隔，测试里会改小。
+var pollInterval = 5 * time.Second
+
 // waitUntil 每 5 秒检查一次 cond，直到返回 true 或超时。
 // cond 返回的错误不会立即中止等待（集群刚起来时请求失败很正常），超时时一起报出来。
 func waitUntil(ctx context.Context, timeout time.Duration, desc string, logf Logf, cond func(context.Context) (bool, error)) error {
 	var lastErr error
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		ok, err := cond(ctx)
 		if err != nil {
-			lastErr = err
+			// 等待本身到期时，正在进行的请求会被打断。这个错误只说明“到点了”，不能盖掉之前的真实原因。
+			if ctx.Err() == nil {
+				lastErr = err
+			}
 			return false, nil
 		}
 		return ok, nil

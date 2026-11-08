@@ -1,0 +1,39 @@
+# 每个 PR 和合入 main 时跑：格式、静态检查、单元测试、构建、shellcheck。
+# e2e 要 kind 集群和 hami、nvml-mock 镜像，等镜像发布到 GHCR 后另建 workflow。
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "not gofmt'ed:"; echo "$out"; exit 1; fi
+      - name: go vet
+        run: go vet ./...
+      - name: unit tests
+        run: go test -race -count=1 ./...
+      - name: build
+        run: go build -o bin/gputenant ./cmd/gputenant && bin/gputenant --help
+
+  shellcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 \
+            -S warning scripts/*.sh tests/*.sh experiments/*.sh

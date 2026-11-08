@@ -8,6 +8,7 @@ var (
 	vapGatePod           = manifests.VAPGatePod
 	prometheusRBAC       = manifests.PrometheusRBAC
 	prometheusValues     = manifests.PrometheusValues
+	verifyPod            = manifests.VerifyPod
 )
 
 // Steps 是开通一个租户的全部步骤，按执行顺序排列；Delete 按相反顺序执行。
