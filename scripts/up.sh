@@ -12,9 +12,10 @@ step 00-tools "$here/00-tools.sh"
 step 00-preflight "$here/00-preflight.sh"
 step 00-build-images "$here/00-build-images.sh"
 step 01-management "$here/01-management.sh"
+step build-cli go -C "$ROOT" build -o "$GPUTENANT_BIN" ./cmd/gputenant
 for t in "${tenants[@]}"; do
-  step "02-$t-cp" "$here/02-tenant-cp.sh" "$t"
-  step "03-$t-worker" "$here/03-tenant-worker.sh" "$t"
-  step "05-$t-guardrails" "$here/05-tenant-guardrails.sh" "$t"
+  # 租户开通由 CLI 完成；02、03、05 脚本保留作参照。
+  # shellcheck disable=SC2046
+  step "create-$t" "$GPUTENANT_BIN" create "$t" $(tenant_gpu_args "$t")
   step "04-$t-verify" "$here/04-verify-env.sh" "$t"
 done

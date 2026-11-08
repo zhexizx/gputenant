@@ -1,0 +1,32 @@
+[17:00:00] tenants-namespace  skipped
+[17:00:00] control-plane      skipped
+[17:00:00] admin-kubeconfig   skipped
+[17:00:00] api-proxy          skipped
+[17:00:00] kubeconfig         skipped
+[17:00:00] worker-node        skipped
+[17:00:01] join               skipped
+[17:00:01] kube-proxy         skipped
+[17:00:01] calico             applying
+[17:00:22]   ok: node Ready and Calico running
+[17:00:22] calico             applied
+[17:00:22] images             applying
+[17:00:46] images             applied
+[17:00:46] nvml-mock          applying
+[17:00:50] nvml-mock          applied
+[17:00:51] hami               applying
+[17:01:12]   ok: tenant-a-worker nvidia.com/gpu=10
+[17:01:12]   ok: device-plugin container ready
+[17:01:17]   ok: hami-scheduler rolled out
+[17:01:17]   ok: device-plugin migStrategy is none
+[17:01:17] hami               applied
+[17:01:18] admission-policy   applying
+[17:01:23]   ok: admission policy denies GPU Pods that skip the webhook
+[17:01:23] admission-policy   applied
+[17:01:23] monitoring         applying
+[17:02:15]   ok: alert rules loaded: KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+[17:02:25]   ok: tunnel probe, hami-scheduler and agent signals healthy
+[17:02:25]   ok: no state alert firing
+[17:02:26] monitoring         applied
+tenant tenant-a ready in 2m26s
+kubeconfig: /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-a/kubeconfig
+exit=0

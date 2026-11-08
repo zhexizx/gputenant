@@ -28,16 +28,13 @@ if docker network inspect kind >/dev/null 2>&1; then
   fi
 fi
 
-# 代理端口要么空闲，要么就是我们自己的代理。
-for t in tenant-a tenant-b; do
-  port=$(tenant_api_port "$t")
+# 代理端口由 gputenant 从 16443 起自动选第一个空闲的，这里只报告占用情况。
+for port in 16443 16444; do
   owner=$(docker ps --filter "publish=$port" --format '{{.Names}}')
-  if [[ "$owner" == "$t-api-proxy" ]]; then
-    ok "端口 $port 由 $owner 使用"
-  elif [[ -n "$owner" ]]; then
-    bad "端口 $port 被容器 $owner 占用"
+  if [[ -n "$owner" ]]; then
+    info "端口 $port 由容器 $owner 使用"
   elif (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
-    bad "端口 $port 被其他进程占用"
+    info "端口 $port 被其他进程占用，CLI 会跳过它"
   else
     ok "端口 $port 空闲"
   fi

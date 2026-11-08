@@ -1,0 +1,27 @@
+[16:58:32] tenants-namespace  applying
+[16:58:32] tenants-namespace  applied
+[16:58:32] control-plane      applying
+[16:59:07]   ok: tenant-a control plane Ready
+[16:59:07] control-plane      applied
+[16:59:07] admin-kubeconfig   applying
+[16:59:07] admin-kubeconfig   applied
+[16:59:07] api-proxy          applying
+[16:59:07]   proxy tenant-a-api-proxy: 127.0.0.1:16443 -> 172.18.255.200:6443
+[16:59:08] api-proxy          applied
+[16:59:08] kubeconfig         applying
+[16:59:08]   ok: tenant-a apiserver reachable via proxy
+[16:59:08] kubeconfig         applied
+[16:59:08] worker-node        applying
+[16:59:15]   ok: tenant-a-worker systemd running
+[16:59:15] worker-node        applied
+[16:59:15] join               applying
+[16:59:15]   node swap=4194304kB, kubelet failSwapOn=false
+[16:59:18]   ok: tenant-a-worker registered
+[16:59:18] join               applied
+[16:59:18] kube-proxy         applying
+[16:59:23]   ok: kube-proxy rules written
+[16:59:24] kube-proxy         applied
+[16:59:24] calico             applying
+[16:59:24]   download https://raw.githubusercontent.com/projectcalico/calico/v3.31.2/manifests/calico.yaml
+Error: calico: apply: timeout (5m0s) waiting for node Ready and Calico running
+exit=1

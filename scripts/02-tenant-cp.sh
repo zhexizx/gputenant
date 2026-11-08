@@ -66,13 +66,15 @@ log "导出 $t kubeconfig"
 # internal: 证书原样，地址是 LB IP，给 kind 网络内的工作节点用。
 # 本地: 经 socat 容器走 127.0.0.1。Docker Desktop 下 WSL 没有到 kind 网桥的路由。
 umask 077
+mkdir -p "$GPUTENANT_HOME/$t"
 kc="$(tenant_kubeconfig "$t")"
 internal="$(tenant_internal_kubeconfig "$t")"
 kubectl -n tenants get secret "${t}-admin-kubeconfig" -o jsonpath='{.data.admin\.conf}' | base64 -d > "$internal"
 
 lb_ip=$(kubectl -n tenants get svc "$t" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-port=$(tenant_api_port "$t")
 proxy="${t}-api-proxy"
+port=$(tenant_api_port "$t" 2>/dev/null || true)
+[[ -n "$port" ]] || case "$t" in tenant-a) port=16443 ;; tenant-b) port=16444 ;; esac
 if [[ "$(docker inspect -f '{{index .Config.Cmd 1}}' "$proxy" 2>/dev/null || true)" != "TCP:$lb_ip:6443" ]]; then
   docker rm -f "$proxy" >/dev/null 2>&1 || true
   docker run -d --name "$proxy" --restart unless-stopped --network kind \

@@ -6,3 +6,4 @@ for t in tenant-a tenant-b; do
 done
 kind delete cluster --name "$MGMT_CLUSTER" --kubeconfig "$MGMT_KUBECONFIG"
 rm -f "${KUBECONFIG_DIR:?}"/*.kubeconfig
+rm -rf "${GPUTENANT_HOME:?}"/tenant-a "${GPUTENANT_HOME:?}"/tenant-b
