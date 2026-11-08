@@ -1,0 +1,39 @@
+# 默认防护：申请 GPU 的 Pod 必须交给 hami-scheduler。
+# HAMi webhook 被跳过时（隧道断开、webhook 挂掉、Pod 带 hami.io/webhook=ignore 标签），
+# schedulerName 保持 default-scheduler，这里会明确拒绝，而不是静默放行。
+# 策略在 apiserver 进程内执行，不经过隧道。见 docs/failure-report.md。
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: require-hami-scheduler
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+  matchConditions:
+    # 普通容器和 init 容器都要检查：HAMi webhook 对只在 init 容器里申请 GPU 的 Pod 也会改 schedulerName。
+    # limits 和 requests 都看。
+    - name: requests-gpu
+      expression: >-
+        object.spec.containers.exists(c, has(c.resources) &&
+          ((has(c.resources.limits) && 'nvidia.com/gpu' in c.resources.limits) ||
+           (has(c.resources.requests) && 'nvidia.com/gpu' in c.resources.requests)))
+        ||
+        (has(object.spec.initContainers) && object.spec.initContainers.exists(c, has(c.resources) &&
+          ((has(c.resources.limits) && 'nvidia.com/gpu' in c.resources.limits) ||
+           (has(c.resources.requests) && 'nvidia.com/gpu' in c.resources.requests))))
+  validations:
+    - expression: "object.spec.schedulerName == 'hami-scheduler'"
+      message: "GPU Pod must use hami-scheduler"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: require-hami-scheduler
+spec:
+  policyName: require-hami-scheduler
+  validationActions: ["Deny"]

@@ -1,0 +1,2 @@
+  failurePolicy: Fail
+  timeoutSeconds: 10

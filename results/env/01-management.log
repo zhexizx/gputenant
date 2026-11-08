@@ -1,5 +1,5 @@
 
-[20:39:33] 创建 kind 集群 kamaji
+[11:03:57] 创建 kind 集群 kamaji
 Creating cluster "kamaji" ...
  • Ensuring node image (kindest/node:v1.37.0) 🖼️  ...
  ✓ Ensuring node image (kindest/node:v1.37.0) 🖼️
@@ -15,17 +15,17 @@ Creating cluster "kamaji" ...
  ✓ Installing StorageClass 💾
  • Waiting ≤ 2m0s for control-plane = Ready ⏳  ...
  ✓ Waiting ≤ 2m0s for control-plane = Ready ⏳
- • Ready after 16s 💚
+ • Ready after 17s 💚
 Set kubectl context to "kind-kamaji"
 You can now use your cluster with:
 
 kubectl cluster-info --context kind-kamaji --kubeconfig /home/Zecy/kamaji-hami-lab/kubeconfigs/management.kubeconfig
 
-Thanks for using kind! 😊
+Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
 NAME                   STATUS   ROLES           AGE   VERSION
 kamaji-control-plane   Ready    control-plane   23s   v1.37.0
 
-[20:40:09] cert-manager v1.21.2
+[11:04:30] cert-manager v1.21.2
 namespace/cert-manager created
 customresourcedefinition.apiextensions.k8s.io/challenges.acme.cert-manager.io created
 customresourcedefinition.apiextensions.k8s.io/orders.acme.cert-manager.io created
@@ -79,7 +79,7 @@ deployment "cert-manager-cainjector" successfully rolled out
 Waiting for deployment "cert-manager-webhook" rollout to finish: 0 of 1 updated replicas are available...
 deployment "cert-manager-webhook" successfully rolled out
 
-[20:40:29] MetalLB v0.16.1
+[11:04:49] MetalLB v0.16.1
 namespace/metallb-system created
 customresourcedefinition.apiextensions.k8s.io/bfdprofiles.metallb.io created
 customresourcedefinition.apiextensions.k8s.io/bgpadvertisements.metallb.io created
@@ -138,11 +138,11 @@ kind 子网 172.18.0.0/16，MetalLB 地址池 172.18.255.200-172.18.255.250
 ipaddresspool.metallb.io/kind-ip-pool created
 l2advertisement.metallb.io/empty created
 
-[20:42:02] Kamaji（仓库内的 chart，镜像固定 digest）
+[11:06:22] Kamaji（仓库内的 chart，镜像固定 digest）
 /home/Zecy/kamaji-hami-lab/manifests/charts/kamaji-0.0.0+latest.tgz: OK
 Release "kamaji" does not exist. Installing it now.
 NAME: kamaji
-LAST DEPLOYED: Mon Nov  2 20:42:04 2026
+LAST DEPLOYED: Tue Nov  3 11:06:24 2026
 NAMESPACE: kamaji-system
 STATUS: deployed
 REVISION: 1
@@ -154,9 +154,9 @@ List the available CRDs installed by Kamaji:
 List all the Tenant Control Plane resources deployed in your cluster:
   kubectl get tenantcontrolplanes.kamaji.clastix.io --all-namespaces
 NAME                      READY   STATUS    RESTARTS   AGE
-kamaji-78dd84457f-d7ltp   1/1     Running   0          42s
-kamaji-etcd-0             1/1     Running   0          42s
-kamaji-etcd-1             1/1     Running   0          30s
-kamaji-etcd-2             1/1     Running   0          26s
+kamaji-78dd84457f-9nlq4   1/1     Running   0          37s
+kamaji-etcd-0             1/1     Running   0          37s
+kamaji-etcd-1             1/1     Running   0          26s
+kamaji-etcd-2             1/1     Running   0          22s
 NAME      DRIVER   READY   AGE
-default   etcd     true    42s
+default   etcd     true    37s

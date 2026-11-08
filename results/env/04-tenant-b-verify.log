@@ -1,12 +1,12 @@
 
-[20:48:34] 触发 reconcile 并重启 kube-proxy
+[11:15:15] 触发 reconcile 并重启 kube-proxy
 tenantcontrolplane.kamaji.clastix.io/tenant-b annotated
 daemonset.apps/lab-kube-proxy restarted
 ok: kube-proxy 重启后稳定
 ok:   ClusterIP 规则存在
 ok:   没有 Kamaji 管理的 kube-proxy
 
-[20:49:25] 实际效果
+[11:16:06] 实际效果
 ok:   API 可访问
 ok:   节点 Ready
 ok:   nvidia.com/gpu=20
@@ -18,8 +18,16 @@ vgpu-monitor docker.io/library/hami:local
 vgpu-scheduler-extender docker.io/library/hami:local
 ok:   HAMi 在用本地镜像
 
-[20:49:26] 版本记录
-# 2026-11-02T20:49:26+11:00
+[11:16:07] 默认防护
+ok:   准入策略生效：跳过 webhook 的 GPU Pod 被拒绝
+ok:   告警规则已加载：KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+ok: 告警依赖的信号都是正常值
+ok:   告警依赖的信号都是正常值
+ok: 没有 firing 的告警
+ok:   没有 firing 的告警
+
+[11:16:08] 版本记录
+# 2026-11-03T11:16:08+11:00
 HAMi 2b8f4e29c48bca376d4f6123d7c6ae7627aef579
 k8s-test-infra e7f2320c95bef01ddde12fb8c493019a558e8f43
 nvml-mock chart 0.6.0

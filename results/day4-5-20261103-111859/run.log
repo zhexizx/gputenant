@@ -1,0 +1,269 @@
+结果目录: /home/Zecy/kamaji-hami-lab/results/day4-5-20261103-111859
+tenant-b 环境验证通过
+
+[11:19:54] === degrade.sh baseline
+# baseline 开始: 2026-11-03T11:19:54+11:00
+
+[11:19:54] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[11:19:57] 临时去掉默认准入策略 require-hami-scheduler
+validatingadmissionpolicybinding.admissionregistration.k8s.io "require-hami-scheduler" deleted
+validatingadmissionpolicy.admissionregistration.k8s.io "require-hami-scheduler" deleted
+ok: 准入策略已不再生效
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[11:20:03] baseline / 对照：创建探针
+over-card: rc=0 0.3s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+gpu-init: rc=0 0.3s: pod/gpu-init created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-init          1/1     Running   0          60s     10.244.66.143   tenant-b-worker   <none>           <none>
+gpu-only          1/1     Running   0          61s     10.244.66.142   tenant-b-worker   <none>           <none>
+nvml-mock-s5f9c   2/2     Running   0          7m31s   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s     <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s     10.244.66.141   tenant-b-worker   <none>           <none>
+ROW baseline	对照	over-card	0	0.3	是	hami-scheduler	-	Pending	0	FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker) 	pod/over-card created 
+ROW baseline	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW baseline	对照	gpu-init	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention 	pod/gpu-init created 
+ROW baseline	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[11:21:13] 阻断隧道：agent（PID 2133）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0               10.244.66.132:53012         172.18.255.201:8132 
+
+[11:21:15] 确认隧道已断
+11:21:36 隧道不通 1/3: Unable to connect to the server: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
+11:21:42 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+11:21:48 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+   30 13714 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2133（阻断时 2133）
+
+[11:21:49] baseline / 故障：创建探针
+over-card: rc=0 0.2s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+gpu-init: rc=0 0.3s: pod/gpu-init created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS                     RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-init          0/1     UnexpectedAdmissionError   0          60s     <none>          tenant-b-worker   <none>           <none>
+gpu-only          0/1     UnexpectedAdmissionError   0          61s     <none>          tenant-b-worker   <none>           <none>
+nvml-mock-s5f9c   2/2     Running                    0          9m17s   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending                    0          61s     <none>          <none>            <none>           <none>
+plain-probe       1/1     Running                    0          60s     10.244.66.144   tenant-b-worker   <none>           <none>
+ROW baseline	故障	over-card	0	0.2	是	default-scheduler	-	Pending	0	FailedScheduling: 0/1 nodes are available: 1 Insufficient nvidia.com/gpucores, 1 Insufficient nvidia.com/gpumem. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not h	pod/over-card created 
+ROW baseline	故障	gpu-only	0	0.3	是	default-scheduler	tenant-b-worker	Failed/UnexpectedAdmissionError	0	UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected 	pod/gpu-only created 
+ROW baseline	故障	gpu-init	0	0.3	是	default-scheduler	tenant-b-worker	Failed/UnexpectedAdmissionError	0	UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected 	pod/gpu-init created 
+ROW baseline	故障	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+
+[11:22:54] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+# baseline 结束: 2026-11-03T11:23:06+11:00 rc=0
+degrade.sh baseline: rc=0
+
+[11:23:07] === degrade.sh fix-a
+# fix-a 开始: 2026-11-03T11:23:07+11:00
+
+[11:23:07] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[11:23:09] 临时去掉默认准入策略 require-hami-scheduler
+validatingadmissionpolicybinding.admissionregistration.k8s.io "require-hami-scheduler" deleted
+validatingadmissionpolicy.admissionregistration.k8s.io "require-hami-scheduler" deleted
+ok: 准入策略已不再生效
+
+[11:23:15] 方案 A：failurePolicy=Fail
+mutatingwebhookconfiguration.admissionregistration.k8s.io/hami-webhook patched
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+[11:23:20] fix-a / 对照：创建探针
+over-card: rc=0 0.3s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+gpu-init: rc=0 0.3s: pod/gpu-init created
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-init          1/1     Running   0          61s   10.244.66.147   tenant-b-worker   <none>           <none>
+gpu-only          1/1     Running   0          61s   10.244.66.146   tenant-b-worker   <none>           <none>
+nvml-mock-s5f9c   2/2     Running   0          10m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s   <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s   10.244.66.145   tenant-b-worker   <none>           <none>
+ROW fix-a	对照	over-card	0	0.3	是	hami-scheduler	-	Pending	0	FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker) 	pod/over-card created 
+ROW fix-a	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW fix-a	对照	gpu-init	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention 	pod/gpu-init created 
+ROW fix-a	对照	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[11:24:30] 阻断隧道：agent（PID 2133）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      0               10.244.66.132:59886         172.18.255.201:8132 
+
+[11:24:32] 确认隧道已断
+11:24:54 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+11:25:00 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+11:25:06 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+   32 14662 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2133（阻断时 2133）
+
+[11:25:07] fix-a / 故障：创建探针
+over-card: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/over-card.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+gpu-only: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-only.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+gpu-init: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-init.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+plain-probe: rc=1 0.3s: Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/plain-probe.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+nvml-mock-s5f9c   2/2     Running   0          12m   10.244.66.133   tenant-b-worker   <none>           <none>
+ROW fix-a	故障	over-card	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/over-card.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call
+ROW fix-a	故障	gpu-only	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-only.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call 
+ROW fix-a	故障	gpu-init	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-init.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call 
+ROW fix-a	故障	plain-probe	1	0.3	否	-	-	-	-	-	Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/plain-probe.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to ca
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+
+[11:26:10] 恢复环境
+mutatingwebhookconfiguration.admissionregistration.k8s.io/hami-webhook patched
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+# fix-a 结束: 2026-11-03T11:26:26+11:00 rc=0
+degrade.sh fix-a: rc=0
+
+[11:26:27] === degrade.sh fix-b
+# fix-b 开始: 2026-11-03T11:26:27+11:00
+
+[11:26:27] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[11:26:29] 方案 B：ValidatingAdmissionPolicy
+ok: 默认准入策略已生效
+  failurePolicy: Ignore
+  timeoutSeconds: 10
+
+[11:26:30] fix-b / 对照：创建探针
+over-card: rc=0 0.3s: pod/over-card created
+gpu-only: rc=0 0.3s: pod/gpu-only created
+gpu-init: rc=0 0.3s: pod/gpu-init created
+plain-probe: rc=0 0.2s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+gpu-init          1/1     Running   0          60s   10.244.66.150   tenant-b-worker   <none>           <none>
+gpu-only          1/1     Running   0          61s   10.244.66.149   tenant-b-worker   <none>           <none>
+nvml-mock-s5f9c   2/2     Running   0          13m   10.244.66.133   tenant-b-worker   <none>           <none>
+over-card         0/1     Pending   0          61s   <none>          <none>            <none>           <none>
+plain-probe       1/1     Running   0          60s   10.244.66.148   tenant-b-worker   <none>           <none>
+ROW fix-b	对照	over-card	0	0.3	是	hami-scheduler	-	Pending	0	FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker) 	pod/over-card created 
+ROW fix-b	对照	gpu-only	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	- 	pod/gpu-only created 
+ROW fix-b	对照	gpu-init	0	0.3	是	hami-scheduler	tenant-b-worker	Running	6	BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention 	pod/gpu-init created 
+ROW fix-b	对照	plain-probe	0	0.2	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+对照组有效
+
+[11:27:40] 阻断隧道：agent（PID 2133）的命名空间 → 172.18.255.201:8132
+-P OUTPUT ACCEPT
+-A OUTPUT -d 172.18.255.201/32 -p tcp -m tcp --dport 8132 -j DROP
+ESTAB 0      30517           10.244.66.132:41734         172.18.255.201:8132 
+
+[11:27:41] 确认隧道已断
+11:28:02 隧道不通 1/3: Unable to connect to the server: context deadline exceeded
+11:28:09 隧道不通 2/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+11:28:15 隧道不通 3/3: Error from server: Get "https://172.18.0.7:10250/containerLogs/kube-system/konnectivity-agent-45646/konnectivity-agent?tailLines=1": No agent available
+   33 79992 DROP       tcp  --  *      *       0.0.0.0/0            172.18.255.201       tcp dpt:8132
+agent PID 2133（阻断时 2133）
+
+[11:28:16] fix-b / 故障：创建探针
+over-card: rc=1 0.3s: The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+gpu-only: rc=1 0.3s: The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+gpu-init: rc=1 0.3s: The pods "gpu-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+plain-probe: rc=0 0.3s: pod/plain-probe created
+观察 60s
+NAME              READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+nvml-mock-s5f9c   2/2     Running   0          15m   10.244.66.133   tenant-b-worker   <none>           <none>
+plain-probe       1/1     Running   0          60s   10.244.66.151   tenant-b-worker   <none>           <none>
+ROW fix-b	故障	over-card	1	0.3	否	-	-	-	-	-	The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	gpu-only	1	0.3	否	-	-	-	-	-	The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	gpu-init	1	0.3	否	-	-	-	-	-	The pods "gpu-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler 
+ROW fix-b	故障	plain-probe	0	0.3	是	default-scheduler	tenant-b-worker	Running	0	- 	pod/plain-probe created 
+ok: 观察结束时隧道仍然不通，agent PID 没有变化
+CHECK PASS: 隧道正常时 GPU Pod 能创建
+CHECK PASS: 隧道断开时 over-card 被明确拒绝
+CHECK PASS: 隧道断开时 gpu-only 被明确拒绝
+CHECK PASS: 隧道断开时 gpu-init 被明确拒绝
+
+[11:29:19] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+# fix-b 结束: 2026-11-03T11:29:30+11:00 rc=0
+degrade.sh fix-b: rc=0
+
+[11:29:31] === webhook-down.sh
+# webhook-down 开始: 2026-11-03T11:29:31+11:00
+
+[11:29:31] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+ABORT: 开始前就有告警在 firing
+
+[11:29:34] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+ok: 恢复后故障状态告警全部解除
+CHECK PASS: 恢复后告警已解除
+# webhook-down 结束: 2026-11-03T11:30:11+11:00 rc=1
+webhook-down.sh: rc=1
+
+degrade.sh baseline: rc=0
+degrade.sh fix-a: rc=0
+degrade.sh fix-b: rc=0
+webhook-down.sh: rc=1
+# Day 4-5 探针结果 day4-5-20261103-111859
+
+| 实验 | 组 | 探针 | apply rc | 耗时(s) | 已创建 | 调度器 | 节点 | 状态 | HAMi 注解数 | 最后的 Warning | apply 输出 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| baseline | 对照 | over-card | 0 | 0.3 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker)  | pod/over-card created  |
+| baseline | 对照 | gpu-only | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| baseline | 对照 | gpu-init | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention  | pod/gpu-init created  |
+| baseline | 对照 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| baseline | 故障 | over-card | 0 | 0.2 | 是 | default-scheduler | - | Pending | 0 | FailedScheduling: 0/1 nodes are available: 1 Insufficient nvidia.com/gpucores, 1 Insufficient nvidia.com/gpumem. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not h | pod/over-card created  |
+| baseline | 故障 | gpu-only | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Failed/UnexpectedAdmissionError | 0 | UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected  | pod/gpu-only created  |
+| baseline | 故障 | gpu-init | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Failed/UnexpectedAdmissionError | 0 | UnexpectedAdmissionError: Allocate failed due to rpc error: code = Unknown desc = no node lock naming a pending pod on node tenant-b-worker, which is unexpected  | pod/gpu-init created  |
+| baseline | 故障 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| fix-a | 对照 | over-card | 0 | 0.3 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker)  | pod/over-card created  |
+| fix-a | 对照 | gpu-only | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| fix-a | 对照 | gpu-init | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention  | pod/gpu-init created  |
+| fix-a | 对照 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| fix-a | 故障 | over-card | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/over-card.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call |
+| fix-a | 故障 | gpu-only | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-only.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call  |
+| fix-a | 故障 | gpu-init | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-init.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call  |
+| fix-a | 故障 | plain-probe | 1 | 0.3 | 否 | - | - | - | - | - | Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/plain-probe.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to ca |
+| fix-b | 对照 | over-card | 0 | 0.3 | 是 | hami-scheduler | - | Pending | 0 | FilteringFailed: 1 nodes CardInsufficientMemory(tenant-b-worker)  | pod/over-card created  |
+| fix-b | 对照 | gpu-only | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | -  | pod/gpu-only created  |
+| fix-b | 对照 | gpu-init | 0 | 0.3 | 是 | hami-scheduler | tenant-b-worker | Running | 6 | BindingFailed: node tenant-b-worker has been locked within 5m0s: node lock contention  | pod/gpu-init created  |
+| fix-b | 对照 | plain-probe | 0 | 0.2 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+| fix-b | 故障 | over-card | 1 | 0.3 | 否 | - | - | - | - | - | The pods "over-card" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler  |
+| fix-b | 故障 | gpu-only | 1 | 0.3 | 否 | - | - | - | - | - | The pods "gpu-only" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler  |
+| fix-b | 故障 | gpu-init | 1 | 0.3 | 否 | - | - | - | - | - | The pods "gpu-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler  |
+| fix-b | 故障 | plain-probe | 0 | 0.3 | 是 | default-scheduler | tenant-b-worker | Running | 0 | -  | pod/plain-probe created  |
+结果目录: /home/Zecy/kamaji-hami-lab/results/day4-5-20261103-111859
+overall=1

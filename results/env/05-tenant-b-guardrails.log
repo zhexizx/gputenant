@@ -1,0 +1,42 @@
+
+[11:14:05] 准入策略 require-hami-scheduler
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler created
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler created
+ok: 准入策略已生效（跳过 webhook 的 GPU Pod 被拒绝）
+
+[11:14:06] Prometheus chart 29.40.3
+Release "prometheus" does not exist. Installing it now.
+NAME: prometheus
+LAST DEPLOYED: Tue Nov  3 11:14:08 2026
+NAMESPACE: monitoring
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+The Prometheus server can be accessed via port 80 on the following DNS name from within your cluster:
+prometheus-server.monitoring.svc.cluster.local
+
+
+Get the Prometheus server URL by running these commands in the same shell:
+  export POD_NAME=$(kubectl get pods --namespace monitoring -l "app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=prometheus" -o jsonpath="{.items[0].metadata.name}")
+  kubectl --namespace monitoring port-forward $POD_NAME 9090
+#################################################################################
+######   WARNING: Persistence is disabled!!! You will lose your data when   #####
+######            the Server pod is terminated.                             #####
+#################################################################################
+
+
+
+
+
+For more information on running Prometheus, visit:
+https://prometheus.io/
+clusterrole.rbac.authorization.k8s.io/prometheus-tunnel-probe created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-tunnel-probe created
+NAME                                             READY   STATUS    RESTARTS   AGE   IP              NODE              NOMINATED NODE   READINESS GATES
+prometheus-kube-state-metrics-86f6b846bf-88fpb   1/1     Running   0          49s   10.244.66.139   tenant-b-worker   <none>           <none>
+prometheus-server-6487f45d79-fqchf               2/2     Running   0          49s   10.244.66.140   tenant-b-worker   <none>           <none>
+ok: 告警规则已加载：KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+ok: 告警依赖的信号都是正常值
+ok: 没有 firing 的告警
+tenant-b 默认防护已部署

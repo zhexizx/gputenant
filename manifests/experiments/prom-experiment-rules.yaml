@@ -1,0 +1,14 @@
+# 只在降级实验里叠加使用：复现“agent Pod 可用性告警发现不了隧道故障”。默认部署不包含这条规则。
+# 放在 serverFiles.alerts 里，和默认的 alerting_rules.yml 分开，叠加时不会覆盖默认规则。
+serverFiles:
+  alerts:
+    groups:
+      - name: gpu-platform-experiment
+        rules:
+          - alert: KonnectivityAgentUnavailable
+            expr: kube_daemonset_status_number_unavailable{daemonset="konnectivity-agent"} > 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "konnectivity-agent unavailable, HAMi webhook may be unreachable"

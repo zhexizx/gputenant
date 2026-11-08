@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
-# 安装 Prometheus，断开隧道，用 Prometheus API 记录告警。没有告警进入 firing 就算失败。
+# 叠加实验规则，断开隧道，用 Prometheus API 记录告警。没有告警进入 firing 就算失败。
 # 查询在节点内经 ClusterIP 进行，不用 port-forward，因为它也依赖隧道。
 source "$(dirname "$0")/lib.sh"
-CHART_VERSION=29.40.3
 ALERT_WAIT="${ALERT_WAIT:-300}"
 RULES=(KonnectivityAgentUnavailable KonnectivityAgentDisconnected ApiserverToNodePathDown)
 OUT="$OUT_ROOT/alert"; mkdir -p "$OUT"
 exec > >(tee "$OUT/run.log") 2>&1
 echo "# alert 开始: $(date -Is)"
 guard
+finish() {
+  local rc=$?
+  trap - EXIT
+  restore_env 2>&1 | tee "$OUT/restore.txt"
+  ((PIPESTATUS[0] == 0)) || { echo "环境恢复失败"; rc=1; }
+  echo "# alert 结束: $(date -Is) rc=$rc"
+  sleep 1
+  exit "$rc"
+}
+trap finish EXIT
+trap 'exit 130' INT TERM
 
-log "Prometheus chart $CHART_VERSION"
-helm upgrade --install prometheus prometheus --repo https://prometheus-community.github.io/helm-charts \
-  --version "$CHART_VERSION" -n monitoring --create-namespace --kubeconfig "$(tenant_kubeconfig "$T")" \
-  -f "$EXP_DIR/prom-values.yaml" --wait --timeout 8m > "$OUT/helm.txt" 2>&1 || { cat "$OUT/helm.txt"; abort "Prometheus 安装失败"; }
-tk "$T" apply -f "$EXP_DIR/prom-tunnel-probe-rbac.yaml" || abort "RBAC apply 失败"
+# 默认部署已经装好 Prometheus（scripts/05-tenant-guardrails.sh）。这里叠加实验规则 KonnectivityAgentUnavailable，
+# 复现“agent Pod 可用性告警发现不了隧道故障”；结束时 restore_env 装回默认配置。
+log "Prometheus chart $PROMETHEUS_CHART_VERSION，叠加实验规则"
+install_prometheus -f "$EXP_DIR/prom-experiment-rules.yaml" > "$OUT/helm.txt" 2>&1 || { cat "$OUT/helm.txt"; abort "Prometheus 安装失败"; }
+tk "$T" apply -f "$GUARDRAILS_DIR/prometheus-rbac.yaml" || abort "RBAC apply 失败"
 tk "$T" -n monitoring get pods -o wide | tee "$OUT/monitoring-pods.txt"
 PROM=$(tk "$T" -n monitoring get svc prometheus-server -o jsonpath='{.spec.clusterIP}')
 [[ -n "$PROM" ]] || abort "读不到 prometheus-server 的 ClusterIP"
@@ -44,17 +54,6 @@ wait_until 180 "隧道正常时没有告警" none_active || { prom alerts | tee 
 metrics_line | tee "$OUT/baseline.txt"
 prom alerts > "$OUT/alerts-baseline.json"
 
-finish() {
-  local rc=$?
-  trap - EXIT
-  restore_env 2>&1 | tee "$OUT/restore.txt"
-  ((PIPESTATUS[0] == 0)) || { echo "环境恢复失败"; rc=1; }
-  echo "# alert 结束: $(date -Is) rc=$rc"
-  sleep 1
-  exit "$rc"
-}
-trap finish EXIT
-trap 'exit 130' INT TERM
 
 start=$(date +%s)
 block_tunnel

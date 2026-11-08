@@ -68,6 +68,32 @@
 - **修复：** 先保存 kubectl 的输出，再判断里面有没有拒绝信息。其他管道里前一个命令都是正常返回，不受影响。
 - **教训：** 要检查失败输出时，不要把会返回非零的命令接到 `grep -q` 前面。
 
+## 9. 实验前置检查把自己的启动命令当成冲突
+
+- **现象：** `verify-from-scratch.sh` 和 `experiments/run.sh` 写在同一行命令里，重建通过后，实验立刻报 `有其他测试或环境脚本在运行`，打印出来的是这行命令本身（`results/day4-5-20261103-111733/`）。
+- **根因：** `guard` 用 `pgrep -af` 按命令行匹配 `scripts/verify-from-scratch.sh` 等脚本名。整行命令的父 shell 一直在运行，命令行里包含这个脚本名，于是匹配到了自己。
+- **修复：** `guard` 匹配时排除自己和全部祖先进程（沿 `/proc/<pid>/status` 的 `PPid` 往上找）。保护没有放宽：真正在运行的环境脚本是独立的进程，不会是实验的祖先，照样会被拦下。已用两个场景验证：外层命令行带着已结束的 `scripts/verify-from-scratch.sh` 时不再误报；另起一个 `scripts/up.sh` 进程时仍然报冲突。
+
+## 10. 上一步的隧道告警还没解除，webhook 故障实验就中止了
+
+- **现象：** `results/day4-5-20261103-111859/` 前三步通过，`webhook-down.sh` 一开始就报 `开始前就有告警在 firing`。
+- **根因：** 方案 B 刚断过隧道，恢复后 `ApiserverToNodePathDown` 和 `KonnectivityAgentDisconnected` 要过一两分钟才解除；前置检查只查一次。
+- **修复：** 改为最多等 300 秒，等故障状态告警全部解除再开始。
+
+## 11. 事件型告警被判为“这次故障触发的”，其实是上一步留下的
+
+- **现象：** `results/day4-5-20261103-113034/webhook-down/` 里 `CHECK PASS: HamiWebhookFailOpen 真实触发`，但它的 `activeAt` 比缩容早 149 秒。
+- **根因：** `HamiWebhookFailOpen` 看最近 5 分钟的放行次数。上一步方案 B 的隧道实验里也有放行，这条告警在 webhook 实验开始时还在 firing。检查只看“观察期间是不是 firing”，没看它是什么时候开始的。另外，告警的“首次观察到”时间是在探针跑完后才开始记录的，只是上限，不是触发时间。
+- **修复：** 开始前等它解除（最多 420 秒）；只有 `activeAt` 晚于缩容才算通过；报告里同时写 `activeAt`。重跑结果见 `results/webhook-down-20261103-115651/`。
+- **教训：** 判断“是这次故障引起的”，要先确认故障前它不在，再看它是什么时候开始的。
+
+## 12. WSL 里拉取 ghcr.io 的 chart 失败
+
+- **现象：** 从零重建时，nvml-mock chart 渲染失败，报 `failed to perform "FetchReference" ... ghcr.io ... exit status 1`，前面有一行 `WSL ... UtilAcceptVsock:271: accept4 failed 110`。
+- **定位：** 几分钟后手动 `helm show chart` 同一个 chart，第一次就成功；重跑整个重建也通过了。
+- **根因（推测，没有验证）：** Helm 访问 OCI 仓库时会调用 Docker Desktop 的凭证程序，这要经过 WSL 和 Windows 之间的 vsock，那次连接超时了。
+- **处理：** 重跑。如果以后经常出现，再给 chart 拉取加重试，或者像 Kamaji 一样把 chart 存进仓库。
+
 ## 预防措施
 
 | 问题 | 检查 | 位置 |
@@ -78,6 +104,9 @@
 | 4 Helm 键 | 安装前渲染并检查镜像；部署后检查实际镜像 | `check-helm-render.sh`、`03-tenant-worker.sh`、`04-verify-env.sh` |
 | 版本漂移 | Kamaji chart 存进仓库并校验 sha256，镜像固定 digest；记录运行中的镜像 | `01-management.sh`、`04-verify-env.sh` |
 | 7 隧道阻断 | 阻断规则加在 agent 命名空间；API 正常且隧道连续 3 次不通，才创建测试 Pod；阻断期间检查 agent PID 和规则 | `experiments/lib.sh` |
+| 9 实验冲突 | 实验单独运行，不和环境脚本写在同一行 | `experiments/lib.sh` 的 `guard` |
+| 10、11 告警残留 | 开始前等告警解除；按 `activeAt` 判断是不是这次触发的 | `experiments/webhook-down.sh` |
+| 默认防护缺失 | 每个租户默认部署准入策略和告警；验证环境和 TC-09 都会检查 | `05-tenant-guardrails.sh`、`04-verify-env.sh`、`tests/tc-09.sh` |
 | 手工改动掩盖问题 | 一条命令删除、重建、跑全部测试 | `scripts/verify-from-scratch.sh` |
 
 Docker Desktop 重启或升级后，先运行 `scripts/00-preflight.sh` 和 `scripts/04-verify-env.sh`。

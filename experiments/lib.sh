@@ -9,7 +9,7 @@ NODE=tenant-b-worker
 EXP_DIR="$ROOT/manifests/experiments"
 WEBHOOK=hami-webhook
 ORIG_POLICY=Ignore
-PROBES=(over-card gpu-only plain-probe)
+PROBES=(over-card gpu-only gpu-init plain-probe)
 OBSERVE="${OBSERVE:-60}"
 OUT_ROOT="${OUT_ROOT:-$ROOT/results/day4-5-$(date +%Y%m%d-%H%M%S)}"; export OUT_ROOT
 LB_IP=$(kubectl -n tenants get svc "$T" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -19,6 +19,38 @@ FW=(-d "$LB_IP" -p tcp --dport 8132 -j DROP)
 abort() { printf '\nABORT: %s\n' "$*"; exit 1; }
 webhook_policy() { tk "$T" get mutatingwebhookconfiguration "$WEBHOOK" -o jsonpath='{.webhooks[0].failurePolicy}'; }
 vap_exists() { tk "$T" get validatingadmissionpolicy require-hami-scheduler >/dev/null 2>&1; }
+prom_has_rule() { prom_api "$T" rules | jq -e --arg a "$1" '[.data.groups[].rules[].name] | index($a)' >/dev/null; }
+exp_rule_gone() { ! prom_has_rule KonnectivityAgentUnavailable; }
+# install_prometheus [helm 参数...]：按默认配置安装，额外参数用来叠加实验规则。
+install_prometheus() {
+  helm upgrade --install prometheus prometheus --repo "$PROMETHEUS_CHART_REPO" --version "$PROMETHEUS_CHART_VERSION" \
+    -n monitoring --create-namespace --kubeconfig "$(tenant_kubeconfig "$T")" \
+    -f "$GUARDRAILS_DIR/prometheus-values.yaml" "$@" --wait --timeout 8m
+}
+# alert.sh 会叠加实验规则；恢复时装回默认配置，并确认默认规则都在。
+restore_prometheus() {
+  if prom_has_rule KonnectivityAgentUnavailable; then
+    log "Prometheus 恢复默认配置"
+    install_prometheus >/dev/null || return 1
+    wait_until 180 "实验规则已移除" exp_rule_gone || return 1
+  fi
+  wait_until 120 "默认告警规则已加载" prom_rules_loaded "$T"
+}
+scheduler_ready() { [[ "$(tk "$T" -n kube-system get deploy hami-scheduler -o jsonpath='{.status.readyReplicas}')" == 1 ]]; }
+# 默认部署带准入策略（scripts/05-tenant-guardrails.sh）。基线和方案 A 要复现没有它时的行为，先临时去掉，恢复时再装回。
+remove_vap() {
+  log "临时去掉默认准入策略 require-hami-scheduler"
+  tk "$T" delete validatingadmissionpolicybinding require-hami-scheduler --ignore-not-found
+  tk "$T" delete validatingadmissionpolicy require-hami-scheduler --ignore-not-found
+  # 删除后 apiserver 要过一会儿才停止执行它。
+  wait_until 90 "准入策略已不再生效" vap_not_denying || abort "去掉准入策略后它仍然生效"
+}
+# 门禁 Pod 的 dry-run 成功，说明准入策略不再生效。不用 ! vap_denies：API 出错时它也会成立。
+vap_not_denying() { local out; out=$(tk "$T" create --dry-run=server -f "$GUARDRAILS_DIR/vap-gate-pod.yaml" 2>&1) && [[ "$out" == *created* ]]; }
+ensure_vap() {
+  tk "$T" apply -f "$GUARDRAILS_DIR/require-hami-scheduler.yaml" >/dev/null || return 1
+  wait_until 90 "默认准入策略已生效" vap_denies "$T"
+}
 api_ok() { [[ "$(tk "$T" --request-timeout=10s get --raw /readyz 2>/dev/null)" == ok ]]; }
 # logs 要走 apiserver → konnectivity → kubelet，和 webhook 调用一样经过隧道。
 tunnel_ok() { tk "$T" --request-timeout=20s -n kube-system logs ds/konnectivity-agent --tail=1 >/dev/null 2>&1; }
@@ -39,6 +71,16 @@ fw_present() { in_agent_ns iptables -C OUTPUT "${FW[@]}" 2>/dev/null; }
 # 旧版本加在节点上的规则，只用于检查和清理。
 node_fw_present() { docker exec "$NODE" iptables -C "$1" "${FW[@]}" 2>/dev/null; }
 
+# 当前进程和它的全部祖先进程的 PID，空格分隔。
+ancestor_pids() {
+  local p=$$ out=""
+  while [[ -n "$p" && "$p" != 0 ]]; do
+    out+="$p "
+    p=$(awk '/^PPid:/ {print $2}' "/proc/$p/status" 2>/dev/null)
+  done
+  echo "$out"
+}
+
 # 确认没有其他测试在运行，并且环境是干净的。
 guard() {
   log "前置检查"
@@ -49,13 +91,17 @@ guard() {
     export LAB_LOCK_HELD=1
   fi
   local others c pods
-  others=$(pgrep -af 'tests/(run-all|tc-[0-9]+)\.sh|scripts/(up|down|verify-from-scratch|0[0-9]-[a-z-]+)\.sh' || true)
+  # 排除自己的祖先进程：外层 shell 的命令行可能写着 "verify-from-scratch.sh; experiments/run.sh"，
+  # 前一个脚本已经结束，命令行里的字样还在，会被误判成正在运行（troubleshooting 第 9 条）。
+  others=$(pgrep -af 'tests/(run-all|tc-[0-9]+)\.sh|scripts/(up|down|verify-from-scratch|0[0-9]-[a-z-]+)\.sh' \
+    | awk -v anc=" $(ancestor_pids) " 'index(anc, " " $1 " ") == 0' || true)
   [[ -z "$others" ]] || abort "有其他测试或环境脚本在运行：$others"
   echo "ok: 没有其他测试或环境脚本在运行"
   fw_present && abort "agent 命名空间里有上次留下的阻断规则，先运行 experiments/restore.sh"
   for c in OUTPUT FORWARD; do node_fw_present "$c" && abort "节点 $c 链有旧版本留下的阻断规则，先运行 experiments/restore.sh"; done
   [[ "$(webhook_policy)" == "$ORIG_POLICY" ]] || abort "webhook 策略不是 $ORIG_POLICY，先运行 experiments/restore.sh"
-  vap_exists && abort "准入策略还在，先运行 experiments/restore.sh"
+  vap_denies "$T" || abort "默认准入策略没有生效，先运行 experiments/restore.sh"
+  scheduler_ready || abort "hami-scheduler 不是 1 个 Ready 副本，先运行 experiments/restore.sh"
   pods=$(tk "$T" get pods -n default -o name | grep -v '^pod/nvml-mock-' || true)
   [[ -z "$pods" ]] || abort "default 命名空间有其他 Pod：$pods"
   api_ok || abort "租户 API 不可用"
@@ -121,18 +167,21 @@ restore_env() {
   unblock_tunnel
   [[ "$(webhook_policy)" == "$ORIG_POLICY" ]] || tk "$T" patch mutatingwebhookconfiguration "$WEBHOOK" --type=json \
     -p "[{\"op\":\"replace\",\"path\":\"/webhooks/0/failurePolicy\",\"value\":\"$ORIG_POLICY\"}]"
-  tk "$T" delete validatingadmissionpolicybinding require-hami-scheduler --ignore-not-found
-  tk "$T" delete validatingadmissionpolicy require-hami-scheduler --ignore-not-found
+  # webhook-down 实验会把 hami-scheduler 缩到 0。
+  tk "$T" -n kube-system scale deploy hami-scheduler --replicas=1 >/dev/null
+  wait_until 180 "hami-scheduler Ready" scheduler_ready || { echo "FAIL: hami-scheduler 没有恢复"; errors=$((errors + 1)); }
+  ensure_vap || { echo "FAIL: 默认准入策略没有恢复"; errors=$((errors + 1)); }
+  restore_prometheus || { echo "FAIL: Prometheus 没有恢复默认配置"; errors=$((errors + 1)); }
   wait_until 300 "隧道恢复" tunnel_ok || { echo "FAIL: 隧道没有恢复"; errors=$((errors + 1)); }
   local c
   fw_present && { echo "FAIL: agent 命名空间里还有阻断规则"; errors=$((errors + 1)); }
   for c in OUTPUT FORWARD; do node_fw_present "$c" && { echo "FAIL: 节点 $c 链还有阻断规则"; errors=$((errors + 1)); }; done
   [[ "$(webhook_policy)" == "$ORIG_POLICY" ]] || { echo "FAIL: webhook 策略没有恢复"; errors=$((errors + 1)); }
-  vap_exists && { echo "FAIL: 准入策略还在"; errors=$((errors + 1)); }
+  vap_denies "$T" || { echo "FAIL: 默认准入策略没有生效"; errors=$((errors + 1)); }
   [[ -z "$(tk "$T" get pod "${PROBES[@]}" --ignore-not-found -o name 2>/dev/null)" ]] || { echo "FAIL: 探针 Pod 还在"; errors=$((errors + 1)); }
   local gpu; gpu=$(tk "$T" get node "$NODE" -o jsonpath='{.status.allocatable.nvidia\.com/gpu}')
   [[ "$gpu" == 20 ]] || { echo "FAIL: nvidia.com/gpu=$gpu，期望 20"; errors=$((errors + 1)); }
-  ((errors == 0)) && echo "环境已恢复：无阻断规则，策略=$ORIG_POLICY，无准入策略，无探针，gpu=$gpu"
+  ((errors == 0)) && echo "环境已恢复：无阻断规则，策略=$ORIG_POLICY，默认准入策略生效，hami-scheduler Ready，无探针，gpu=$gpu"
   ((errors == 0))
 }
 

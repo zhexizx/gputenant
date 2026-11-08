@@ -1,22 +1,22 @@
 namespace/tenants unchanged
 
-[20:46:22] TenantControlPlane tenant-b
+[11:11:44] TenantControlPlane tenant-b
 tenantcontrolplane.kamaji.clastix.io/tenant-b created
 ok: tenant-b 控制面 Ready
 deployment "tenant-b" successfully rolled out
 NAME                                            VERSION   INSTALLED VERSION   STATUS   CONTROL-PLANE ENDPOINT   KUBECONFIG                  DATASTORE   AGE
-tenantcontrolplane.kamaji.clastix.io/tenant-a   v1.36.4   v1.36.4             Ready    172.18.255.200:6443      tenant-a-admin-kubeconfig   default     3m50s
+tenantcontrolplane.kamaji.clastix.io/tenant-a   v1.36.4   v1.36.4             Ready    172.18.255.200:6443      tenant-a-admin-kubeconfig   default     4m59s
 tenantcontrolplane.kamaji.clastix.io/tenant-b   v1.36.4   v1.36.4             Ready    172.18.255.201:6443      tenant-b-admin-kubeconfig   default     16s
 
 NAME                            READY   STATUS    RESTARTS   AGE
-pod/tenant-a-6fc96d7f84-4pqw7   4/4     Running   0          3m49s
-pod/tenant-b-5cc5cfc8db-vj7xh   4/4     Running   0          14s
+pod/tenant-a-74d957866c-mz8gh   4/4     Running   0          4m58s
+pod/tenant-b-66968d8fc8-pjzhx   4/4     Running   0          15s
 
 NAME               TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)                         AGE
-service/tenant-a   LoadBalancer   10.96.209.25   172.18.255.200   6443:31416/TCP,8132:32624/TCP   3m50s
-service/tenant-b   LoadBalancer   10.96.139.40   172.18.255.201   6443:30403/TCP,8132:30981/TCP   16s
+service/tenant-a   LoadBalancer   10.96.40.201   172.18.255.200   6443:30918/TCP,8132:32236/TCP   4m59s
+service/tenant-b   LoadBalancer   10.96.48.56    172.18.255.201   6443:31241/TCP,8132:31350/TCP   16s
 
-[20:46:39] 导出 tenant-b kubeconfig
+[11:12:01] 导出 tenant-b kubeconfig
 ok: tenant-b apiserver 可访问
 Kubernetes control plane is running at https://127.0.0.1:16444
 CoreDNS is running at https://127.0.0.1:16444/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy

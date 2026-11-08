@@ -1,0 +1,133 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 13,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-03T00:56:57Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "over-card",
+                "namespace": "default",
+                "resourceVersion": "13763",
+                "uid": "459f2225-6801-45f5-87d6-0ce69dd1c4a8"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-03T00:57:01Z",
+            "message": "1 nodes CardInsufficientMemory(tenant-b-worker)",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:56:57Z",
+                "name": "over-card.18e4630354026885",
+                "namespace": "default",
+                "resourceVersion": "13875",
+                "uid": "18914bfe-1b54-4bbc-9a26-a770f6aeb01d"
+            },
+            "reason": "FilteringFailed",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "hami-scheduler"
+            },
+            "type": "Warning"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 12,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-03T00:56:57Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "over-card",
+                "namespace": "default",
+                "resourceVersion": "13763",
+                "uid": "459f2225-6801-45f5-87d6-0ce69dd1c4a8"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-03T00:57:01Z",
+            "message": "no available node, 1 nodes do not meet",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:56:57Z",
+                "name": "over-card.18e463035404f169",
+                "namespace": "default",
+                "resourceVersion": "13873",
+                "uid": "5cab6d42-1c1e-458f-920d-7f9380775d77"
+            },
+            "reason": "FilteringFailed",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "hami-scheduler"
+            },
+            "type": "Warning"
+        },
+        {
+            "action": "Scheduling",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-03T00:56:57.547880Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "over-card",
+                "namespace": "default",
+                "resourceVersion": "13763",
+                "uid": "459f2225-6801-45f5-87d6-0ce69dd1c4a8"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "0/1 nodes are available: 1 2/2 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:56:57Z",
+                "name": "over-card.18e46303542294bb",
+                "namespace": "default",
+                "resourceVersion": "13766",
+                "uid": "0318e0ba-a32c-4a2a-bf27-a2ae8d7f8ea5"
+            },
+            "reason": "FailedScheduling",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "hami-scheduler-hami-scheduler-cccd69798-bcmhn",
+            "source": {},
+            "type": "Warning"
+        },
+        {
+            "action": "Scheduling",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-03T00:56:57.575828Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "over-card",
+                "namespace": "default",
+                "resourceVersion": "13764",
+                "uid": "459f2225-6801-45f5-87d6-0ce69dd1c4a8"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "0/1 nodes are available: 1 2/2 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.",
+            "metadata": {
+                "creationTimestamp": "2026-11-03T00:56:57Z",
+                "name": "over-card.18e4630355cce525",
+                "namespace": "default",
+                "resourceVersion": "13775",
+                "uid": "52c842f2-3c67-40da-8555-d5fe3997f006"
+            },
+            "reason": "FailedScheduling",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "hami-scheduler-hami-scheduler-cccd69798-bcmhn",
+            "series": {
+                "count": 2,
+                "lastObservedTime": "2026-11-03T00:56:58.231629Z"
+            },
+            "source": {},
+            "type": "Warning"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

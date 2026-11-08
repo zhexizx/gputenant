@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 跑 TC-00~08，结果写到 results/<时间>/。退出码为 0 且日志里有 RESULT ... PASS，才算通过。
+# 跑 TC-00~09，结果写到 results/<时间>/。退出码为 0 且日志里有 RESULT ... PASS，才算通过。
 # TC-00 是测试框架自检，不需要集群。用法: run-all.sh [00 01 ...]（默认全部）
 source "$(dirname "$0")/lib.sh"
 RUN_DIR="$ROOT/results/$(date +%Y%m%d-%H%M%S)"; export RUN_DIR
 mkdir -p "$RUN_DIR"
-ids=("$@"); ((${#ids[@]})) || ids=(00 01 02 03 04 05 06 07 08)
+ids=("$@"); ((${#ids[@]})) || ids=(00 01 02 03 04 05 06 07 08 09)
 
 # 记录测试用的代码版本；工作区有未提交的改动时标记 -dirty。
 commit=$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)

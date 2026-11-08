@@ -1,0 +1,36 @@
+# TC-04: HAMi 完成分配和绑定，节点锁自动释放
+# 开始: 2026-11-03T11:16:28+11:00
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+
+$ kubectl describe pod gpu-share-1 | grep ...
+                  hami.io/vgpu-devices-allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+  Normal  Scheduled         12s   hami-scheduler  Successfully assigned default/gpu-share-1 to tenant-a-worker
+  Normal  BindingSucceed    13s   hami-scheduler  Successfully binding node [tenant-a-worker] to default/gpu-share-1
+  Normal  Pulled            8s    kubelet         spec.containers{app}: Successfully pulled image "busybox:1.37" in 3.865s (3.865s including waiting). Image size: 2222118 bytes.
+CHECK PASS: gpu-share-1 bind-phase (= success)
+gpu-share-1 allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+CHECK PASS: gpu-share-1 有分配注解
+CHECK PASS: gpu-share-2 bind-phase (= success)
+gpu-share-2 allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+CHECK PASS: gpu-share-2 有分配注解
+CHECK PASS: gpu-share-3 bind-phase (= success)
+gpu-share-3 allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+CHECK PASS: gpu-share-3 有分配注解
+
+$ 节点上的 mutex/lock 注解（应该为空）
+
+$ kubectl get node tenant-a-worker -o json
+（11468 字节 JSON，已校验）
+<无>
+CHECK PASS: 节点上没有残留的锁注解 (= )
+
+# 结束: 2026-11-03T11:16:30+11:00
+RESULT TC-04 PASS (7 checks, 0 failed)

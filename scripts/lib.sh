@@ -28,6 +28,12 @@ K8S_TEST_INFRA_COMMIT=e7f2320c95bef01ddde12fb8c493019a558e8f43
 SRC_DIR="$HOME/src"
 NVML_MOCK_CHART_VERSION=0.6.0
 SOCAT_IMAGE=alpine/socat:1.8.0.3
+PROMETHEUS_CHART_REPO=https://prometheus-community.github.io/helm-charts
+PROMETHEUS_CHART_VERSION=29.40.3
+GUARDRAILS_DIR="$ROOT/manifests/guardrails"
+# 默认部署的告警规则。前三条反映持续的故障状态；HamiWebhookFailOpen 是事件型，放行后约 5 分钟才解除。
+GUARDRAIL_STATE_ALERTS=(KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown)
+GUARDRAIL_ALERTS=("${GUARDRAIL_STATE_ALERTS[@]}" HamiWebhookFailOpen)
 
 # 始终用项目自己的 kubeconfig，不改动 ~/.kube/config 的当前 context。
 export KUBECONFIG="$MGMT_KUBECONFIG"
@@ -59,4 +65,45 @@ wait_until() {
     sleep 5
   done
   printf 'ok: %s\n' "$desc"
+}
+
+# ---- 默认防护（05-tenant-guardrails.sh 部署）的检查 ----
+
+# vap_denies <租户>：准入策略已生效。门禁 Pod 带 hami.io/webhook=ignore 标签，会跳过 webhook，必须被拒绝。
+# 先存下输出再 grep：被拒绝时 kubectl 返回 1，pipefail 下管道会判为失败（troubleshooting 第 8 条）。
+vap_denies() {
+  local out
+  out=$(tk "$1" create --dry-run=server -f "$GUARDRAILS_DIR/vap-gate-pod.yaml" 2>&1)
+  grep -q 'GPU Pod must use hami-scheduler' <<<"$out"
+}
+# prom_api <租户> <API 路径> [curl 参数...]：在节点内经 ClusterIP 查询 Prometheus。
+# 不用 port-forward，因为它也经过隧道。
+prom_api() {
+  local t="$1" path="$2" ip; shift 2
+  ip=$(tk "$t" -n monitoring get svc prometheus-server -o jsonpath='{.spec.clusterIP}') && [[ -n "$ip" ]] || return 1
+  docker exec "$t-worker" curl -sS -m 10 -G "http://$ip/api/v1/$path" "$@"
+}
+# prom_query <租户> <PromQL>：返回所有结果值，用逗号分隔。
+prom_query() {
+  local out
+  out=$(prom_api "$1" query --data-urlencode "query=$2") && jq -r '[.data.result[].value[1]] | join(",")' <<<"$out"
+}
+# 默认的告警规则都已加载。
+prom_rules_loaded() {
+  local names a
+  names=$(prom_api "$1" rules | jq -r '.data.groups[].rules[].name') || return 1
+  for a in "${GUARDRAIL_ALERTS[@]}"; do grep -qx "$a" <<<"$names" || return 1; done
+}
+# 告警依赖的三个信号都是正常值。
+prom_signals_ok() {
+  [[ "$(prom_query "$1" 'up{job="tunnel-probe"}')" == 1 ]] &&
+    [[ "$(prom_query "$1" 'up{job="hami-scheduler"}')" == 1 ]] &&
+    [[ "$(prom_query "$1" konnectivity_network_proxy_agent_open_server_connections)" == 1 ]]
+}
+# 没有处于 firing 的故障状态告警。不看事件型的 HamiWebhookFailOpen：故障恢复后它还会持续约 5 分钟。
+prom_none_firing() {
+  local out names
+  names=$(printf '%s\n' "${GUARDRAIL_STATE_ALERTS[@]}" | jq -R . | jq -sc .)
+  out=$(prom_api "$1" alerts) &&
+    [[ "$(jq --argjson n "$names" '[.data.alerts[] | select(.state == "firing" and (.labels.alertname as $a | $n | index($a)))] | length' <<<"$out")" == 0 ]]
 }

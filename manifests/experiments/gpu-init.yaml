@@ -1,0 +1,20 @@
+# 只在 init 容器里申请 GPU：检查方案 B 是否也覆盖 initContainers。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-init
+spec:
+  initContainers:
+    - name: init
+      image: busybox:1.37
+      command: ["true"]
+      env:
+        - name: CUDA_DISABLE_CONTROL
+          value: "true"
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]

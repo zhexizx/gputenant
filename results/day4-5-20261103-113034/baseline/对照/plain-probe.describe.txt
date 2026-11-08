@@ -1,0 +1,56 @@
+Name:             plain-probe
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             tenant-b-worker/172.18.0.7
+Start Time:       Tue, 03 Nov 2026 11:31:38 +1100
+Labels:           <none>
+Annotations:      cni.projectcalico.org/containerID: bf816b499380eef12e8da1393b5cc460f86f117dd7e0a05a22962804992427da
+                  cni.projectcalico.org/podIP: 10.244.66.152/32
+                  cni.projectcalico.org/podIPs: 10.244.66.152/32
+Status:           Running
+IP:               10.244.66.152
+IPs:
+  IP:  10.244.66.152
+Containers:
+  app:
+    Container ID:  containerd://ca9294cf1a18a49e155ccb13f6b5eed5925a6759174fe435f4868d7482240677
+    Image:         busybox:1.37
+    Image ID:      docker.io/library/busybox@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sleep
+      infinity
+    State:          Running
+      Started:      Tue, 03 Nov 2026 11:31:39 +1100
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-qr2wm (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-qr2wm:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  63s   default-scheduler  Successfully assigned default/plain-probe to tenant-b-worker
+  Normal  Pulled     63s   kubelet            spec.containers{app}: Container image "busybox:1.37" already present on machine and can be accessed by the pod
+  Normal  Created    63s   kubelet            spec.containers{app}: Container created
+  Normal  Started    62s   kubelet            spec.containers{app}: Container started
