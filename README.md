@@ -1,4 +1,4 @@
-# kamaji-hami-lab
+# gputenant
 
 基于 Kamaji 托管控制面和 HAMi GPU 虚拟化的多租户 GPU Kubernetes 平台，跑在 kind 上，GPU 由 nvml-mock 模拟。
 

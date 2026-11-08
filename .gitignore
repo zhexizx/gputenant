@@ -4,3 +4,7 @@ kubeconfigs/
 # 本地工具和下载缓存
 .tools/
 .cache/
+
+# Go 构建产物
+/gputenant
+/bin/
