@@ -1,0 +1,63 @@
+# TC-08: 租户隔离
+# 开始: 2026-11-08T17:09:14+11:00
+
+===== tenant-a =====
+
+$ tk tenant-a get nodes
+NAME              STATUS   ROLES    AGE     VERSION
+tenant-a-worker   Ready    <none>   9m57s   v1.36.4
+
+$ kubectl get pods -A | grep gpu-
+NAMESPACE     NAME                                             READY   STATUS    RESTARTS   AGE
+default       gpu-mem-big                                      0/1     Pending   0          22s
+default       gpu-share-1                                      1/1     Running   0          66s
+default       gpu-share-2                                      1/1     Running   0          60s
+default       gpu-share-3                                      1/1     Running   0          58s
+default       gpu-share-4                                      0/1     Pending   0          45s
+{
+  "name": "tenant-a-worker",
+  "gpu": "10",
+  "register": "[{\"id\":\"GPU-12345678-1234-1234-1234-123456780000\",\"count\":10,\"devmem\":40960,\"devcore\":100,\"type\":\"NVIDIA A100-SXM4-40GB\",\"mode\":\"hami-core\",\"health\":true}]"
+}
+
+===== tenant-b =====
+
+$ tk tenant-b get nodes
+NAME              STATUS   ROLES    AGE     VERSION
+tenant-b-worker   Ready    <none>   6m14s   v1.36.4
+
+$ kubectl get pods -A | grep gpu-
+NAMESPACE     NAME                                             READY   STATUS    RESTARTS   AGE
+{
+  "name": "tenant-b-worker",
+  "gpu": "20",
+  "register": "[{\"id\":\"GPU-00000074-0000-0000-0000-000000000000\",\"count\":10,\"devmem\":16384,\"devcore\":100,\"type\":\"NVIDIA T4\",\"mode\":\"hami-core\",\"health\":true},{\"id\":\"GPU-00000074-0000-0000-0000-000000000001\",\"index\":1,\"count\":10,\"devmem\":16384,\"devcore\":100,\"type\":\"NVIDIA T4\",\"mode\":\"hami-core\",\"health\":true}]"
+}
+
+CHECK PASS: tenant-a 只看到自己的节点 (= tenant-a-worker)
+CHECK PASS: tenant-b 只看到自己的节点 (= tenant-b-worker)
+CHECK PASS: tenant-a 能看到 gpu-share-1
+CHECK PASS: tenant-b 的 API 可访问
+
+$ kubectl get pods -A -o json
+（219447 字节 JSON，已校验）
+default/nvml-mock-4j9j6
+kube-system/calico-kube-controllers-5b84fd7749-7xfxq
+kube-system/calico-node-25h8k
+kube-system/coredns-695c5d47b8-pd7bp
+kube-system/coredns-695c5d47b8-v6vl7
+kube-system/hami-device-plugin-9hd7k
+kube-system/hami-scheduler-cccd69798-4dgjz
+kube-system/konnectivity-agent-zc8wv
+kube-system/lab-kube-proxy-jt22h
+monitoring/prometheus-kube-state-metrics-86f6b846bf-q8btm
+monitoring/prometheus-server-6487f45d79-6njmf
+CHECK PASS: tenant-b 看不到 tenant-a 的 gpu-* Pod (= 0)
+CHECK PASS: tenant-a nvidia.com/gpu (= 10)
+CHECK PASS: tenant-b nvidia.com/gpu (= 20)
+CHECK PASS: tenant-b 有 2 张卡 (= 2)
+A 的凭证访问 B: rc=1, error: You must be logged in to the server (Unauthorized)
+CHECK PASS: A 的凭证被 B 的 API 拒绝（401/403）
+
+# 结束: 2026-11-08T17:09:17+11:00
+RESULT TC-08 PASS (9 checks, 0 failed)

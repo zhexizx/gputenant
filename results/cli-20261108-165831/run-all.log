@@ -1,0 +1,448 @@
+# TC-00: 测试框架自检（不依赖集群）
+# 开始: 2026-11-08T17:08:02+11:00
+
+## fetch_json：资源不存在时 FAIL
+    | 
+    | $ kubectl get pod x -o json
+    | Error from server (NotFound): pods "x" not found
+    | CHECK FAIL: kubectl get pod x 失败（rc=1，错误见上方输出）
+CHECK PASS: fetch_json：资源不存在时 FAIL (= COUNTS 1 1 1)
+
+## fetch_json：API 不通时 FAIL
+    | 
+    | $ kubectl get node tenant-a-worker -o json
+    | dial tcp 127.0.0.1:16443: connect: connection refused
+    | CHECK FAIL: kubectl get node tenant-a-worker 失败（rc=1，错误见上方输出）
+CHECK PASS: fetch_json：API 不通时 FAIL (= COUNTS 1 1 1)
+
+## fetch_json：输出不是 JSON 时 FAIL
+    | 
+    | $ kubectl get node tenant-a-worker -o json
+    | CHECK FAIL: kubectl get node tenant-a-worker 的输出不是合法 JSON: not json
+CHECK PASS: fetch_json：输出不是 JSON 时 FAIL (= COUNTS 1 1 1)
+
+## fetch_json：stderr 有警告时 JSON 不被污染
+    | 
+    | $ kubectl get node tenant-a-worker -o json
+    | Warning: something is deprecated
+    | （31 字节 JSON，已校验）
+CHECK PASS: fetch_json：stderr 有警告时 JSON 不被污染 (= COUNTS 0 0 0)
+
+## check_pending_on_hami：API 不通时 FAIL，不判通过
+    | 
+    | $ kubectl get pod gpu-share-4 -o json
+    | connection refused
+    | CHECK FAIL: kubectl get pod gpu-share-4 失败（rc=1，错误见上方输出）
+CHECK PASS: check_pending_on_hami：API 不通时 FAIL，不判通过 (= COUNTS 1 1 1)
+
+## check_pending_on_hami：Pod 已被调度时 FAIL
+    | 
+    | $ kubectl get pod gpu-share-4 -o json
+    | （101 字节 JSON，已校验）
+    | CHECK PASS: gpu-share-4 schedulerName (= hami-scheduler)
+    | CHECK FAIL: gpu-share-4 没有被调度: 实际 'tenant-a-worker'，期望 ''
+    | CHECK FAIL: gpu-share-4 phase: 实际 'Running'，期望 'Pending'
+CHECK PASS: check_pending_on_hami：Pod 已被调度时 FAIL (= COUNTS 0 3 2)
+
+## check_pending_on_hami：正常 Pending 时 3 项通过
+    | 
+    | $ kubectl get pod gpu-share-4 -o json
+    | （72 字节 JSON，已校验）
+    | CHECK PASS: gpu-share-4 schedulerName (= hami-scheduler)
+    | CHECK PASS: gpu-share-4 没有被调度 (= )
+    | CHECK PASS: gpu-share-4 phase (= Pending)
+CHECK PASS: check_pending_on_hami：正常 Pending 时 3 项通过 (= COUNTS 0 3 0)
+
+# 结束: 2026-11-08T17:08:02+11:00
+RESULT TC-00 PASS (7 checks, 0 failed)
+# TC-01: 控制面和 API 地址
+# 开始: 2026-11-08T17:08:03+11:00
+
+$ kubectl -n tenants get tcp,pods,svc
+NAME                                            VERSION   INSTALLED VERSION   STATUS   CONTROL-PLANE ENDPOINT   KUBECONFIG                  DATASTORE   AGE
+tenantcontrolplane.kamaji.clastix.io/tenant-a   v1.36.4   v1.36.4             Ready    172.18.255.200:6443      tenant-a-admin-kubeconfig   default     9m31s
+tenantcontrolplane.kamaji.clastix.io/tenant-b   v1.36.4   v1.36.4             Ready    172.18.255.201:6443      tenant-b-admin-kubeconfig   default     5m27s
+
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/tenant-a-7db4cdfbb8-npfhl   4/4     Running   0          9m30s
+pod/tenant-b-5d9f78f9bd-5fgl7   4/4     Running   0          5m26s
+
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                         AGE
+service/tenant-a   LoadBalancer   10.96.91.246    172.18.255.200   6443:30124/TCP,8132:31124/TCP   9m31s
+service/tenant-b   LoadBalancer   10.96.173.219   172.18.255.201   6443:31732/TCP,8132:31481/TCP   5m27s
+
+--- tenant-a
+CHECK PASS: tenant-a TCP 状态 (= Ready)
+CHECK PASS: tenant-a 控制面 Pod 4 个容器都 Ready (= 4)
+CHECK PASS: tenant-a LB IP 已分配 (172.18.255.200)
+CHECK PASS: tenant-a 从 kind 网络访问 /readyz (= 200)
+CHECK PASS: tenant-a kubeconfig 访问 /readyz (= ok)
+
+--- tenant-b
+CHECK PASS: tenant-b TCP 状态 (= Ready)
+CHECK PASS: tenant-b 控制面 Pod 4 个容器都 Ready (= 4)
+CHECK PASS: tenant-b LB IP 已分配 (172.18.255.201)
+CHECK PASS: tenant-b 从 kind 网络访问 /readyz (= 200)
+CHECK PASS: tenant-b kubeconfig 访问 /readyz (= ok)
+
+# 结束: 2026-11-08T17:08:04+11:00
+RESULT TC-01 PASS (10 checks, 0 failed)
+# TC-02: 节点和 Konnectivity 隧道（tenant-a）
+# 开始: 2026-11-08T17:08:05+11:00
+
+$ tk tenant-a get nodes -o wide
+NAME              STATUS   ROLES    AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                             CONTAINER-RUNTIME
+tenant-a-worker   Ready    <none>   8m48s   v1.36.4   172.18.0.5    <none>        Debian GNU/Linux 13 (trixie)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+$ tk tenant-a -n kube-system get pods
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-5b84fd7749-q7sc8   1/1     Running   0          8m36s
+calico-node-5hjn9                          1/1     Running   0          8m36s
+coredns-695c5d47b8-4jl77                   1/1     Running   0          9m1s
+coredns-695c5d47b8-gjn5p                   1/1     Running   0          9m1s
+hami-device-plugin-qrb5j                   2/2     Running   0          6m57s
+hami-scheduler-cccd69798-s4hlb             2/2     Running   0          7m4s
+konnectivity-agent-sn4ql                   1/1     Running   0          8m26s
+lab-kube-proxy-dgjpt                       1/1     Running   0          82s
+
+$ tk tenant-a get mutatingwebhookconfigurations
+NAME           WEBHOOKS   AGE
+hami-webhook   1          7m4s
+    name: hami-webhook
+        name: hami-scheduler
+    failurePolicy: Ignore
+    name: vgpu.hami.io
+    timeoutSeconds: 10
+CHECK PASS: 节点 Ready (= True)
+CHECK PASS: konnectivity-agent Ready (= 1)
+
+$ kubectl -n kube-system logs ds/konnectivity-agent --tail=5
+I1108 06:08:07.010324       1 server_counter.go:57] "Determined server count" serverCount=1 source="KNP server response headers"
+I1108 06:08:07.050486       1 client.go:373] "[tracing] recv packet" type="DATA"
+I1108 06:08:07.050528       1 client.go:485] "received DATA" connectionID=1
+I1108 06:08:07.050619       1 client.go:611] "write to remote" connectionID=1 lastData=200 dataSize=200
+I1108 06:08:07.051152       1 client.go:554] "received data from remote" bytes=106 connectionID=1
+CHECK PASS: 经隧道读取节点日志
+CHECK PASS: hami-webhook 已注册
+failurePolicy=Ignore
+
+# 结束: 2026-11-08T17:08:07+11:00
+RESULT TC-02 PASS (4 checks, 0 failed)
+# TC-03: webhook 把 GPU Pod 交给 hami-scheduler
+# 开始: 2026-11-08T17:08:08+11:00
+pod/gpu-share-1 created
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+pod/gpu-share-2 created
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+pod/gpu-share-3 created
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+CHECK PASS: gpu-share-1 schedulerName (= hami-scheduler)
+CHECK PASS: gpu-share-2 schedulerName (= hami-scheduler)
+CHECK PASS: gpu-share-3 schedulerName (= hami-scheduler)
+
+# 结束: 2026-11-08T17:08:19+11:00
+RESULT TC-03 PASS (3 checks, 0 failed)
+# TC-04: HAMi 完成分配和绑定，节点锁自动释放
+# 开始: 2026-11-08T17:08:20+11:00
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+
+$ kubectl describe pod gpu-share-1 | grep ...
+                  hami.io/vgpu-devices-allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+  Normal  Scheduled         12s   hami-scheduler  Successfully assigned default/gpu-share-1 to tenant-a-worker
+  Normal  BindingSucceed    13s   hami-scheduler  Successfully binding node [tenant-a-worker] to default/gpu-share-1
+  Normal  Pulled            7s    kubelet         spec.containers{app}: Successfully pulled image "busybox:1.37" in 3.76s (3.76s including waiting). Image size: 2222118 bytes.
+CHECK PASS: gpu-share-1 bind-phase (= success)
+gpu-share-1 allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+CHECK PASS: gpu-share-1 有分配注解
+CHECK PASS: gpu-share-2 bind-phase (= success)
+gpu-share-2 allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+CHECK PASS: gpu-share-2 有分配注解
+CHECK PASS: gpu-share-3 bind-phase (= success)
+gpu-share-3 allocated: GPU-12345678-1234-1234-1234-123456780000,NVIDIA,10000,30:;
+CHECK PASS: gpu-share-3 有分配注解
+
+$ 节点上的 mutex/lock 注解（应该为空）
+
+$ kubectl get node tenant-a-worker -o json
+（11754 字节 JSON，已校验）
+<无>
+CHECK PASS: 节点上没有残留的锁注解 (= )
+
+# 结束: 2026-11-08T17:08:22+11:00
+RESULT TC-04 PASS (7 checks, 0 failed)
+# TC-05: 3 个 Pod 共享一张卡
+# 开始: 2026-11-08T17:08:23+11:00
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+
+$ tk tenant-a get pods -o wide
+NAME              READY   STATUS    RESTARTS   AGE     IP               NODE              NOMINATED NODE   READINESS GATES
+gpu-share-1       1/1     Running   0          17s     10.244.175.204   tenant-a-worker   <none>           <none>
+gpu-share-2       1/1     Running   0          11s     10.244.175.205   tenant-a-worker   <none>           <none>
+gpu-share-3       1/1     Running   0          9s      10.244.175.206   tenant-a-worker   <none>           <none>
+nvml-mock-wh8zg   2/2     Running   0          7m35s   10.244.175.197   tenant-a-worker   <none>           <none>
+
+$ kubectl describe node | grep nvidia.com/gpu
+                    nvidia.com/gpu.present=true
+  nvidia.com/gpu:     10
+  nvidia.com/gpu:     10
+  nvidia.com/gpu     3           3
+CHECK PASS: gpu-share-1 Running (= Running)
+CHECK PASS: gpu-share-1 所在节点 (= tenant-a-worker)
+gpu-share-1 -> GPU-12345678-1234-1234-1234-123456780000
+CHECK PASS: gpu-share-2 Running (= Running)
+CHECK PASS: gpu-share-2 所在节点 (= tenant-a-worker)
+gpu-share-2 -> GPU-12345678-1234-1234-1234-123456780000
+CHECK PASS: gpu-share-3 Running (= Running)
+CHECK PASS: gpu-share-3 所在节点 (= tenant-a-worker)
+gpu-share-3 -> GPU-12345678-1234-1234-1234-123456780000
+CHECK PASS: 分配到了 GPU UUID
+CHECK PASS: 分配到同一张卡 (= 1)
+
+# 结束: 2026-11-08T17:08:27+11:00
+RESULT TC-05 PASS (8 checks, 0 failed)
+# TC-06: 算力超分被拒绝（已用 90，再申请 30）
+# 开始: 2026-11-08T17:08:28+11:00
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+pod/gpu-share-4 created
+
+$ tk tenant-a get pod gpu-share-4 -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+gpu-share-4   0/1     Pending   0          21s   <none>   <none>   <none>           <none>
+Events:
+  Type     Reason            Age                From            Message
+  ----     ------            ----               ----            -------
+  Warning  FailedScheduling  20s                hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientCore. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FailedScheduling  20s                hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientCore. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FilteringFailed   21s (x2 over 21s)  hami-scheduler  1 nodes CardInsufficientCore(tenant-a-worker)
+  Warning  FilteringFailed   21s (x2 over 21s)  hami-scheduler  no available node, 1 nodes do not meet
+
+$ kubectl get pod gpu-share-4 -o json
+（5119 字节 JSON，已校验）
+CHECK PASS: gpu-share-4 schedulerName (= hami-scheduler)
+CHECK PASS: gpu-share-4 没有被调度 (= )
+CHECK PASS: gpu-share-4 phase (= Pending)
+CHECK PASS: 事件给出算力不足的原因
+
+# 结束: 2026-11-08T17:08:50+11:00
+RESULT TC-06 PASS (4 checks, 0 failed)
+# TC-07: 显存超分被拒绝（申请 50000，单卡 40960）
+# 开始: 2026-11-08T17:08:51+11:00
+
+$ tk tenant-a get node tenant-a-worker -o jsonpath={.metadata.annotations.hami\.io/node-nvidia-register}{"\n"}
+[{"id":"GPU-12345678-1234-1234-1234-123456780000","count":10,"devmem":40960,"devcore":100,"type":"NVIDIA A100-SXM4-40GB","mode":"hami-core","health":true}]
+CHECK PASS: 单卡显存和计划一致 (= 40960)
+pod/gpu-mem-big created
+
+$ tk tenant-a get pod gpu-mem-big -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+gpu-mem-big   0/1     Pending   0          21s   <none>   <none>   <none>           <none>
+Events:
+  Type     Reason            Age                From            Message
+  ----     ------            ----               ----            -------
+  Warning  FailedScheduling  20s                hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FailedScheduling  20s                hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientMemory. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FilteringFailed   21s (x2 over 21s)  hami-scheduler  1 nodes CardInsufficientMemory(tenant-a-worker)
+  Warning  FilteringFailed   21s (x2 over 21s)  hami-scheduler  no available node, 1 nodes do not meet
+
+$ kubectl get pod gpu-mem-big -o json
+（5124 字节 JSON，已校验）
+CHECK PASS: gpu-mem-big schedulerName (= hami-scheduler)
+CHECK PASS: gpu-mem-big 没有被调度 (= )
+CHECK PASS: gpu-mem-big phase (= Pending)
+CHECK PASS: 事件包含 CardInsufficientMemory
+
+# 结束: 2026-11-08T17:09:13+11:00
+RESULT TC-07 PASS (5 checks, 0 failed)
+# TC-08: 租户隔离
+# 开始: 2026-11-08T17:09:14+11:00
+
+===== tenant-a =====
+
+$ tk tenant-a get nodes
+NAME              STATUS   ROLES    AGE     VERSION
+tenant-a-worker   Ready    <none>   9m57s   v1.36.4
+
+$ kubectl get pods -A | grep gpu-
+NAMESPACE     NAME                                             READY   STATUS    RESTARTS   AGE
+default       gpu-mem-big                                      0/1     Pending   0          22s
+default       gpu-share-1                                      1/1     Running   0          66s
+default       gpu-share-2                                      1/1     Running   0          60s
+default       gpu-share-3                                      1/1     Running   0          58s
+default       gpu-share-4                                      0/1     Pending   0          45s
+{
+  "name": "tenant-a-worker",
+  "gpu": "10",
+  "register": "[{\"id\":\"GPU-12345678-1234-1234-1234-123456780000\",\"count\":10,\"devmem\":40960,\"devcore\":100,\"type\":\"NVIDIA A100-SXM4-40GB\",\"mode\":\"hami-core\",\"health\":true}]"
+}
+
+===== tenant-b =====
+
+$ tk tenant-b get nodes
+NAME              STATUS   ROLES    AGE     VERSION
+tenant-b-worker   Ready    <none>   6m14s   v1.36.4
+
+$ kubectl get pods -A | grep gpu-
+NAMESPACE     NAME                                             READY   STATUS    RESTARTS   AGE
+{
+  "name": "tenant-b-worker",
+  "gpu": "20",
+  "register": "[{\"id\":\"GPU-00000074-0000-0000-0000-000000000000\",\"count\":10,\"devmem\":16384,\"devcore\":100,\"type\":\"NVIDIA T4\",\"mode\":\"hami-core\",\"health\":true},{\"id\":\"GPU-00000074-0000-0000-0000-000000000001\",\"index\":1,\"count\":10,\"devmem\":16384,\"devcore\":100,\"type\":\"NVIDIA T4\",\"mode\":\"hami-core\",\"health\":true}]"
+}
+
+CHECK PASS: tenant-a 只看到自己的节点 (= tenant-a-worker)
+CHECK PASS: tenant-b 只看到自己的节点 (= tenant-b-worker)
+CHECK PASS: tenant-a 能看到 gpu-share-1
+CHECK PASS: tenant-b 的 API 可访问
+
+$ kubectl get pods -A -o json
+（219447 字节 JSON，已校验）
+default/nvml-mock-4j9j6
+kube-system/calico-kube-controllers-5b84fd7749-7xfxq
+kube-system/calico-node-25h8k
+kube-system/coredns-695c5d47b8-pd7bp
+kube-system/coredns-695c5d47b8-v6vl7
+kube-system/hami-device-plugin-9hd7k
+kube-system/hami-scheduler-cccd69798-4dgjz
+kube-system/konnectivity-agent-zc8wv
+kube-system/lab-kube-proxy-jt22h
+monitoring/prometheus-kube-state-metrics-86f6b846bf-q8btm
+monitoring/prometheus-server-6487f45d79-6njmf
+CHECK PASS: tenant-b 看不到 tenant-a 的 gpu-* Pod (= 0)
+CHECK PASS: tenant-a nvidia.com/gpu (= 10)
+CHECK PASS: tenant-b nvidia.com/gpu (= 20)
+CHECK PASS: tenant-b 有 2 张卡 (= 2)
+A 的凭证访问 B: rc=1, error: You must be logged in to the server (Unauthorized)
+CHECK PASS: A 的凭证被 B 的 API 拒绝（401/403）
+
+# 结束: 2026-11-08T17:09:17+11:00
+RESULT TC-08 PASS (9 checks, 0 failed)
+# TC-09: 默认防护：准入策略和告警
+# 开始: 2026-11-08T17:09:18+11:00
+
+===== tenant-a =====
+
+$ tk tenant-a get validatingadmissionpolicy,validatingadmissionpolicybinding require-hami-scheduler
+NAME                                                                            VALIDATIONS   PARAMKIND   AGE
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler   1             <unset>     8m
+
+NAME                                                                                   POLICYNAME               PARAMREF   AGE
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler   require-hami-scheduler   <unset>    8m
+CHECK PASS: tenant-a 有准入策略和绑定
+
+$ kubectl create --dry-run=server（tc09-gpu，webhook=webhook，GPU 在 containers）
+hami-scheduler
+CHECK PASS: tenant-a 正常的 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-init，webhook=webhook，GPU 在 init）
+hami-scheduler
+CHECK PASS: tenant-a 正常的 init 容器 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-skip-gpu，webhook=skip，GPU 在 containers）
+The pods "tc09-skip-gpu" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-a 跳过 webhook 的 GPU Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-init，webhook=skip，GPU 在 init）
+The pods "tc09-skip-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-a 跳过 webhook、只在 init 容器申请 GPU 的 Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-plain，webhook=skip，GPU 在 none）
+default-scheduler
+CHECK PASS: tenant-a 跳过 webhook 的普通 Pod：允许 (= 0|default-scheduler)
+
+$ Prometheus 规则和告警（tenant-a）
+KonnectivityAgentDisconnected ok inactive
+ApiserverToNodePathDown ok inactive
+HamiWebhookDown ok inactive
+HamiWebhookFailOpen ok inactive
+CHECK PASS: tenant-a 告警规则已加载：KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+CHECK PASS: tenant-a 告警依赖的信号都是正常值
+CHECK PASS: tenant-a 没有 firing 的告警
+
+===== tenant-b =====
+
+$ tk tenant-b get validatingadmissionpolicy,validatingadmissionpolicybinding require-hami-scheduler
+NAME                                                                            VALIDATIONS   PARAMKIND   AGE
+validatingadmissionpolicy.admissionregistration.k8s.io/require-hami-scheduler   1             <unset>     4m21s
+
+NAME                                                                                   POLICYNAME               PARAMREF   AGE
+validatingadmissionpolicybinding.admissionregistration.k8s.io/require-hami-scheduler   require-hami-scheduler   <unset>    4m21s
+CHECK PASS: tenant-b 有准入策略和绑定
+
+$ kubectl create --dry-run=server（tc09-gpu，webhook=webhook，GPU 在 containers）
+hami-scheduler
+CHECK PASS: tenant-b 正常的 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-init，webhook=webhook，GPU 在 init）
+hami-scheduler
+CHECK PASS: tenant-b 正常的 init 容器 GPU Pod：允许，交给 hami-scheduler (= 0|hami-scheduler)
+
+$ kubectl create --dry-run=server（tc09-skip-gpu，webhook=skip，GPU 在 containers）
+The pods "tc09-skip-gpu" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-b 跳过 webhook 的 GPU Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-init，webhook=skip，GPU 在 init）
+The pods "tc09-skip-init" is invalid: : ValidatingAdmissionPolicy 'require-hami-scheduler' with binding 'require-hami-scheduler' denied request: GPU Pod must use hami-scheduler
+CHECK PASS: tenant-b 跳过 webhook、只在 init 容器申请 GPU 的 Pod：被拒绝
+
+$ kubectl create --dry-run=server（tc09-skip-plain，webhook=skip，GPU 在 none）
+default-scheduler
+CHECK PASS: tenant-b 跳过 webhook 的普通 Pod：允许 (= 0|default-scheduler)
+
+$ Prometheus 规则和告警（tenant-b）
+KonnectivityAgentDisconnected ok inactive
+ApiserverToNodePathDown ok inactive
+HamiWebhookDown ok inactive
+HamiWebhookFailOpen ok inactive
+CHECK PASS: tenant-b 告警规则已加载：KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+CHECK PASS: tenant-b 告警依赖的信号都是正常值
+CHECK PASS: tenant-b 没有 firing 的告警
+
+# 结束: 2026-11-08T17:09:24+11:00
+RESULT TC-09 PASS (18 checks, 0 failed)
+
+# TC 结果 20261108-170801
+
+代码版本：`fe55a18-dirty`
+
+| TC | 结论 | 说明 |
+|---|---|---|
+| TC-00 | PASS | 测试框架自检（不依赖集群）; 7 checks, 0 failed |
+| TC-01 | PASS | 控制面和 API 地址; 10 checks, 0 failed |
+| TC-02 | PASS | 节点和 Konnectivity 隧道（tenant-a）; 4 checks, 0 failed |
+| TC-03 | PASS | webhook 把 GPU Pod 交给 hami-scheduler; 3 checks, 0 failed |
+| TC-04 | PASS | HAMi 完成分配和绑定，节点锁自动释放; 7 checks, 0 failed |
+| TC-05 | PASS | 3 个 Pod 共享一张卡; 8 checks, 0 failed |
+| TC-06 | PASS | 算力超分被拒绝（已用 90，再申请 30）; 4 checks, 0 failed |
+| TC-07 | PASS | 显存超分被拒绝（申请 50000，单卡 40960）; 5 checks, 0 failed |
+| TC-08 | PASS | 租户隔离; 9 checks, 0 failed |
+| TC-09 | PASS | 默认防护：准入策略和告警; 18 checks, 0 failed |

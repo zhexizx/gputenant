@@ -8,20 +8,21 @@
 
 总计划原文在 `多租户GPU平台-总计划.md`（仓库外）。它的附录已过时，**以本仓库为准**。
 
-## 当前状态（2026-11-03，暂停）
+## 当前状态（2026-11-08）
 
 | 部分 | 状态 | 证据 |
 |---|---|---|
-| 环境：管理集群、两个租户、nvml-mock、HAMi | ✅ 可以从零重建 | `scripts/up.sh`、`scripts/verify-from-scratch.sh` |
-| 功能测试 TC-00~09 | ✅ 从零重建后全部通过 | `results/20261103-111609/` |
+| 环境：管理集群、两个租户、nvml-mock、HAMi | ✅ 可以从零重建，租户由 CLI 开通 | `scripts/up.sh`、`scripts/verify-from-scratch.sh` |
+| 功能测试 TC-00~09 | ✅ 用 CLI 从零重建后全部通过 | `results/20261108-172558/` |
 | 降级实验：隧道断开、webhook 挂掉、方案 A/B | ✅ 完成 | `docs/failure-report.md`、`results/day4-5-20261103-113034/`、`results/webhook-down-20261103-115651/` |
 | 默认防护：准入策略和 4 条告警，新租户自动部署 | ✅ 完成，告警都真实触发过 | `scripts/05-tenant-guardrails.sh`、TC-09 |
-| Go CLI、e2e、CI、REST API、GHCR、Grafana | ⬜ 没开始 | |
+| `gputenant create`、`delete` | ✅ 14 个 Step；kill 后重跑能接着做完，半成品租户能删干净 | `results/cli-20261108-165831/`、`docs/work-summary-2026-11-08.md` |
+| `status`、`verify`、e2e、CI、REST API、GHCR、Grafana | ⬜ 没开始 | |
 | 真实 GPU 验证 | ⬜ 有条件执行，见下文 | |
 
-**暂停时还没收尾的：**
+**还没收尾的：**
 
-- `feat/default-guardrails` 分支已提交，还没合并进 `main`，最新一个提交也还没推送。下次开始时先推送并合并。
+- 简历数字 `X`（3 次 `time gputenant create` 的中位数）还没测。
 - `experiments/lib.sh` 的 `guard` 改成了排除自己的祖先进程（`docs/troubleshooting.md` 第 9 条）。这个改动只用模拟场景测过，还没在真实实验里跑过。
 
 ## 运行
@@ -35,7 +36,7 @@
 ./scripts/down.sh                # 只删除本实验的资源
 ```
 
-kubeconfig 在 `kubeconfigs/`，含集群管理员凭证，已被 `.gitignore` 排除。排障记录见 `docs/troubleshooting.md`。
+`up.sh` 会构建 `bin/gputenant` 并用它开通租户。租户 kubeconfig 在 `kubeconfigs/<租户>/`（脚本把 `GPUTENANT_HOME` 默认设为 `kubeconfigs/`；单独运行 CLI 时默认是 `~/.gputenant/`），含集群管理员凭证，已被 `.gitignore` 排除。排障记录见 `docs/troubleshooting.md`。
 
 ## 剩余计划
 

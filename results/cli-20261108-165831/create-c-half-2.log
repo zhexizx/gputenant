@@ -1,0 +1,22 @@
+[17:10:41] tenants-namespace  skipped
+[17:10:41] control-plane      applying
+[17:10:56]   ok: tenant-c control plane Ready
+[17:10:56] control-plane      applied
+[17:10:56] admin-kubeconfig   applying
+[17:10:56] admin-kubeconfig   applied
+[17:10:56] api-proxy          applying
+[17:10:56]   proxy tenant-c-api-proxy: 127.0.0.1:16445 -> 172.18.255.202:6443
+[17:10:57] api-proxy          applied
+[17:10:57] kubeconfig         applying
+[17:10:57]   ok: tenant-c apiserver reachable via proxy
+[17:10:57] kubeconfig         applied
+[17:10:57] worker-node        applying
+[17:11:03]   ok: tenant-c-worker systemd running
+[17:11:04] worker-node        applied
+[17:11:04] join               applying
+[17:11:04]   node swap=4194304kB, kubelet failSwapOn=false
+[17:11:06]   ok: tenant-c-worker registered
+[17:11:06] join               applied
+[17:11:06] kube-proxy         applying
+Error: kube-proxy: apply: interrupted while waiting for kube-proxy rules written: context canceled
+exit=1

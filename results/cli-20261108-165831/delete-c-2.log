@@ -1,0 +1,17 @@
+[17:11:07] monitoring         deleted
+[17:11:07] admission-policy   deleted
+[17:11:07] hami               deleted
+[17:11:07] nvml-mock          deleted
+[17:11:07] images             deleted
+[17:11:07] calico             deleted
+[17:11:07] kube-proxy         deleted
+[17:11:07] join               deleted
+[17:11:08] worker-node        deleted
+[17:11:08] kubeconfig         deleted
+[17:11:08] api-proxy          deleted
+[17:11:08] admin-kubeconfig   deleted
+[17:11:13]   ok: TenantControlPlane tenant-c deleted
+[17:11:13] control-plane      deleted
+[17:11:13] tenants-namespace  deleted
+tenant tenant-c deleted
+exit=0

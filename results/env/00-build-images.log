@@ -1,10 +1,10 @@
 /home/Zecy/src/k8s-test-infra @ e7f2320c95bef01ddde12fb8c493019a558e8f43
 /home/Zecy/src/HAMi @ 2b8f4e29c48bca376d4f6123d7c6ae7627aef579
 
-[11:03:52] 构建 nvml-mock:local
-sha256:830c6a9294f915f2589e90def89a79954598db03bbc3e166aac8c9ed40905439
+[17:11:57] 构建 nvml-mock:local
+sha256:bae54f9d21183f52b5947cda71b536fa1398266f411735d9af6a032cc5e2edbb
 
-[11:03:55] 构建 hami:local
-sha256:902fdbf3756ef910b729828eda1ae8ffcf9bf63131ab8255617c3136d1b46092
-hami:local 902fdbf3756e 1.74GB
-nvml-mock:local 830c6a9294f9 440MB
+[17:14:05] 构建 hami:local
+sha256:7be3a873258ed386603236586caba3ee392d13da4194f01a21407803f0e083c5
+nvml-mock:local bae54f9d2118 440MB
+hami:local 7be3a873258e 1.74GB

@@ -7,6 +7,9 @@ TOOLS_BIN="$ROOT/.tools/bin"
 CACHE_DIR="$ROOT/.cache"
 KUBECONFIG_DIR="$ROOT/kubeconfigs"
 MGMT_KUBECONFIG="$KUBECONFIG_DIR/management.kubeconfig"
+# 租户 kubeconfig 的根目录，gputenant CLI 用同一个变量。脚本默认放在 kubeconfigs/ 下。
+export GPUTENANT_HOME="${GPUTENANT_HOME:-$KUBECONFIG_DIR}"
+GPUTENANT_BIN="$ROOT/bin/gputenant"
 export PATH="$TOOLS_BIN:$PATH"
 
 MGMT_CLUSTER=kamaji
@@ -41,9 +44,12 @@ export KUBECONFIG="$MGMT_KUBECONFIG"
 log() { printf '\n[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
-tenant_kubeconfig() { printf '%s/%s.kubeconfig' "$KUBECONFIG_DIR" "$1"; }
-tenant_internal_kubeconfig() { printf '%s/%s.internal.kubeconfig' "$KUBECONFIG_DIR" "$1"; }
-tenant_api_port() { case "$1" in tenant-a) echo 16443 ;; tenant-b) echo 16444 ;; esac; }
+tenant_kubeconfig() { printf '%s/%s/kubeconfig' "$GPUTENANT_HOME" "$1"; }
+tenant_internal_kubeconfig() { printf '%s/%s/internal.kubeconfig' "$GPUTENANT_HOME" "$1"; }
+# 代理端口由 CLI 分配（从 16443 起第一个空闲的），从代理容器读取。
+tenant_api_port() { docker port "$1-api-proxy" 6443/tcp | head -1 | sed 's/.*://'; }
+# 租户的 GPU 配置，和 README 的 TC 设计一致。
+tenant_gpu_args() { case "$1" in tenant-a) echo "--gpu-profile a100 --gpu-count 1" ;; tenant-b) echo "--gpu-profile t4 --gpu-count 2" ;; esac; }
 tk() { local t="$1"; shift; kubectl --kubeconfig "$(tenant_kubeconfig "$t")" "$@"; }
 
 check_tenant() {

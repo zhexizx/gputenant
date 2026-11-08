@@ -25,9 +25,10 @@ type Reporter func(step string, event Event)
 type Event string
 
 const (
-	EventSkipped Event = "skipped" // Check 已为 true
-	EventApplied Event = "applied"
-	EventDeleted Event = "deleted"
+	EventApplying Event = "applying"
+	EventSkipped  Event = "skipped" // Check 已为 true
+	EventApplied  Event = "applied"
+	EventDeleted  Event = "deleted"
 )
 
 // Create 按顺序执行 steps，跳过已完成的步骤。
@@ -42,6 +43,7 @@ func Create(ctx context.Context, steps []Step, report Reporter) error {
 			report(s.Name(), EventSkipped)
 			continue
 		}
+		report(s.Name(), EventApplying)
 		if err := s.Apply(ctx); err != nil {
 			return fmt.Errorf("%s: apply: %w", s.Name(), err)
 		}

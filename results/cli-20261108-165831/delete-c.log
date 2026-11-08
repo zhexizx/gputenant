@@ -1,0 +1,18 @@
+[17:10:05] monitoring         deleted
+[17:10:05] admission-policy   deleted
+[17:10:05] hami               deleted
+[17:10:05] nvml-mock          deleted
+[17:10:05] images             deleted
+[17:10:05] calico             deleted
+[17:10:05] kube-proxy         deleted
+[17:10:05] join               deleted
+[17:10:06] worker-node        deleted
+[17:10:06]   keep /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-c: remove /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-c: directory not empty
+[17:10:06] kubeconfig         deleted
+[17:10:06] api-proxy          deleted
+[17:10:06] admin-kubeconfig   deleted
+[17:10:12]   ok: TenantControlPlane tenant-c deleted
+[17:10:12] control-plane      deleted
+[17:10:12] tenants-namespace  deleted
+tenant tenant-c deleted
+exit=0
