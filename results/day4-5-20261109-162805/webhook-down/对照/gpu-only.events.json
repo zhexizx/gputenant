@@ -1,0 +1,199 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-09T05:42:42Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "129525",
+                "uid": "6da228d2-15f7-4191-b63b-a0e78e1b3536"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-09T05:42:42Z",
+            "message": "find fit node(tenant-b-worker), 0 nodes not fit, 1 nodes fit(tenant-b-worker:0.00)",
+            "metadata": {
+                "creationTimestamp": "2026-11-09T05:42:42Z",
+                "name": "gpu-only.18e64a169b14ce5c",
+                "namespace": "default",
+                "resourceVersion": "129527",
+                "uid": "bb8c0eee-bc4c-4a9e-a85c-e5f71d1ec9c6"
+            },
+            "reason": "FilteringSucceed",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "hami-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-09T05:42:43Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "129526",
+                "uid": "6da228d2-15f7-4191-b63b-a0e78e1b3536"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-09T05:42:43Z",
+            "message": "Successfully binding node [tenant-b-worker] to default/gpu-only",
+            "metadata": {
+                "creationTimestamp": "2026-11-09T05:42:44Z",
+                "name": "gpu-only.18e64a16ddd1388b",
+                "namespace": "default",
+                "resourceVersion": "129553",
+                "uid": "17f257af-5157-476f-8caf-47a6a495d06d"
+            },
+            "reason": "BindingSucceed",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "",
+            "source": {
+                "component": "hami-scheduler"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-09T05:42:43.625612Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "129525",
+                "uid": "6da228d2-15f7-4191-b63b-a0e78e1b3536"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned default/gpu-only to tenant-b-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-09T05:42:43Z",
+                "name": "gpu-only.18e64a16dddbdc3d",
+                "namespace": "default",
+                "resourceVersion": "129546",
+                "uid": "3b3371b6-7deb-4c93-86a5-efb35c83aac6"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "hami-scheduler",
+            "reportingInstance": "hami-scheduler-hami-scheduler-cccd69798-qx8qz",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-09T05:42:45Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{app}",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "129545",
+                "uid": "6da228d2-15f7-4191-b63b-a0e78e1b3536"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-09T05:42:45Z",
+            "message": "Container image \"busybox:1.37\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-09T05:42:45Z",
+                "name": "gpu-only.18e64a174c7f2808",
+                "namespace": "default",
+                "resourceVersion": "129571",
+                "uid": "6ddb5f77-acc9-401b-a9b6-e65ad5203bf6"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-09T05:42:45Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{app}",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "129545",
+                "uid": "6da228d2-15f7-4191-b63b-a0e78e1b3536"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-09T05:42:45Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-09T05:42:45Z",
+                "name": "gpu-only.18e64a174df4325c",
+                "namespace": "default",
+                "resourceVersion": "129573",
+                "uid": "cd16ef87-9eb9-4d7f-83ed-59c392641a19"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-09T05:42:45Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{app}",
+                "kind": "Pod",
+                "name": "gpu-only",
+                "namespace": "default",
+                "resourceVersion": "129545",
+                "uid": "6da228d2-15f7-4191-b63b-a0e78e1b3536"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-09T05:42:45Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-09T05:42:45Z",
+                "name": "gpu-only.18e64a1756ce1828",
+                "namespace": "default",
+                "resourceVersion": "129575",
+                "uid": "776dd626-1a59-4f11-b4dd-394db2421f8c"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "tenant-b-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "tenant-b-worker"
+            },
+            "type": "Normal"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

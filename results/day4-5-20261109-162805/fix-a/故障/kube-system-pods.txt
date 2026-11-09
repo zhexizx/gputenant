@@ -1,0 +1,9 @@
+NAME                                       READY   STATUS    RESTARTS   AGE     IP              NODE              NOMINATED NODE   READINESS GATES
+calico-kube-controllers-5b84fd7749-6k9kc   1/1     Running   0          23h     10.244.66.130   tenant-b-worker   <none>           <none>
+calico-node-wmf6h                          1/1     Running   0          23h     172.18.0.7      tenant-b-worker   <none>           <none>
+coredns-695c5d47b8-pcgsq                   1/1     Running   0          23h     10.244.66.131   tenant-b-worker   <none>           <none>
+coredns-695c5d47b8-tkkfj                   1/1     Running   0          23h     10.244.66.129   tenant-b-worker   <none>           <none>
+hami-device-plugin-2nrk5                   2/2     Running   0          23h     10.244.66.137   tenant-b-worker   <none>           <none>
+hami-scheduler-cccd69798-qx8qz             2/2     Running   0          6h15m   10.244.66.148   tenant-b-worker   <none>           <none>
+konnectivity-agent-shwhb                   1/1     Running   0          23h     10.244.66.132   tenant-b-worker   <none>           <none>
+lab-kube-proxy-7b2z7                       1/1     Running   0          6m37s   172.18.0.7      tenant-b-worker   <none>           <none>

@@ -1,0 +1,8 @@
+round 1: create rc=0, 214.5s, status rc=0, skipped=1
+round 2: create rc=0, 221.7s, status rc=0, skipped=1
+round 3: create rc=0, 214.3s, status rc=0, skipped=1
+
+# 结果
+成功轮数: 3/3
+各轮（秒，排序后）: 214.3 214.5 221.7 
+中位数 X = 214.5 秒（3 分 34 秒）

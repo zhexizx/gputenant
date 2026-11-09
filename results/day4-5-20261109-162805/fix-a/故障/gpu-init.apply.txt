@@ -1,0 +1,1 @@
+Error from server (InternalError): error when creating "/home/Zecy/kamaji-hami-lab/manifests/experiments/gpu-init.yaml": Internal error occurred: failed calling webhook "vgpu.hami.io": failed to call webhook: Post "https://hami-scheduler.kube-system.svc:443/webhook?timeout=10s": No agent available

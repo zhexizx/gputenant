@@ -1,0 +1,18 @@
+# alert 开始: 2026-11-09T16:48:27+11:00
+
+[16:48:27] 前置检查
+ok: 没有其他测试或环境脚本在运行
+ok: 环境干净，API 和隧道正常，LB=172.18.255.201
+
+[16:48:29] Prometheus chart 29.40.3，叠加实验规则
+Error: failed to fetch https://github.com/prometheus-community/helm-charts/releases/download/prometheus-29.40.3/prometheus-29.40.3.tgz : 504 Gateway Timeout
+
+ABORT: Prometheus 安装失败
+
+[16:48:30] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
+# alert 结束: 2026-11-09T16:48:41+11:00 rc=1

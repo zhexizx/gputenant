@@ -1,0 +1,5 @@
+degrade.sh baseline: rc=0
+degrade.sh fix-a: rc=0
+degrade.sh fix-b: rc=0
+webhook-down.sh: rc=0
+alert.sh: rc=1

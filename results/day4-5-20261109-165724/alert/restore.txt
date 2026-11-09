@@ -1,0 +1,9 @@
+
+[17:05:08] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+
+[17:05:17] Prometheus 恢复默认配置
+Error: failed to fetch https://github.com/prometheus-community/helm-charts/releases/download/prometheus-29.40.3/prometheus-29.40.3.tgz : 504 Gateway Timeout
+FAIL: Prometheus 没有恢复默认配置
+ok: 隧道恢复

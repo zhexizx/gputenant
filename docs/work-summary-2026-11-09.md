@@ -65,3 +65,27 @@
 2. ✅ CI e2e 重新运行后通过。CI 的 TC 明细在那次运行的 `e2e-results` artifact 里（需要登录 GitHub 下载），没有存进仓库。
 3. 还没做：GHCR 的包默认私有，想让别人能 `docker pull`，要在包设置里改成 Public。
 4. 已知问题：合并到 `main` 时 e2e 会和 release 同时或更早触发；只要 hami、nvml-mock 的固定 commit 不变，镜像已经在 GHCR 上，以后不会再出现。改 commit 时要先跑 release 再跑 e2e。
+
+## 简历数字 `X`
+
+按 README 的定义测：管理集群已就绪、镜像已构建，3 次从零 `time gputenant create`（tenant-c，t4×2），每轮结束 `status` 14/14 再删除。
+
+| 轮次 | 耗时 |
+|---|---|
+| 1 | 214.5 秒 |
+| 2 | 221.7 秒 |
+| 3 | 214.3 秒 |
+| **中位数 X** | **214.5 秒（约 3 分 34 秒）** |
+
+- 证据：`results/measure-x-20261109-140325/`（`env.txt` 记了代码版本 `81229f9`、Docker 资源和同时运行的容器），脚本 `scripts/measure-create.sh` 可以重测。
+- 唯一跳过的步骤是 `tenants-namespace`：这个命名空间所有租户共用，tenant-a、tenant-b 在时已经存在。其他 13 步每轮都真正执行了。
+- 各步耗时（3 轮大致相同）：monitoring 约 60 秒、calico 约 55 秒、images 约 30 秒、hami 28 秒、control-plane 15 秒，其余都在 10 秒以内。要缩短开通时间，先看前两步。
+- 简历写法：“开通一个租户约 3.5 分钟（单机 kind，GPU 为模拟）”。`N` 写 14。
+
+## 第 4 块：文档定稿
+
+- README 改成定稿版本：主要结果、架构、运行、测试和 CI、验证记录、设计、局限、文档索引。去掉了剩余计划、真实 GPU 的预算安排和简历写法。
+- `docs/failure-report.md` 不再引用仓库外的计划文档；补上 11/09 的三次运行和告警耗时的第三轮。
+- **`guard` 改动在真实实验里验证通过：**用 `bash -c './scripts/04-verify-env.sh tenant-a; ./experiments/run.sh'` 复现 troubleshooting 第 9 条的场景，前置检查没有误报；基线、方案 A、方案 B、webhook 故障四步都返回 0，探针结果和前两轮一致（`results/day4-5-20261109-162805/`）。
+- 告警这一步两次因为 GitHub 对 Prometheus chart 返回 504 中止，第三次（`results/day4-5-20261109-165724/`）两条检查都通过：`ApiserverToNodePathDown` 阻断后 105 秒、`KonnectivityAgentDisconnected` 138 秒 firing，`KonnectivityAgentUnavailable` 339 秒内没有触发，和前两轮一致。结束时恢复 Prometheus 又遇到 504，用 `experiments/restore.sh` 重试后恢复，两个租户 `status` 14/14（troubleshooting 第 14 条）。
+- 真实 GPU 验证没有做，README 的“局限”写明了。
