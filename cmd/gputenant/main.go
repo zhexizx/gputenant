@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/zhexizx/gputenant/internal/api"
 	"github.com/zhexizx/gputenant/internal/tenant"
 )
 
@@ -31,53 +31,46 @@ func main() {
 	}
 }
 
+// version 由构建时的 -ldflags 设置。
+var version = "dev"
+
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
 func newRootCmd() *cobra.Command {
 	home, _ := os.UserHomeDir()
 	g := &globalFlags{}
 	root := &cobra.Command{
 		Use:          "gputenant",
 		Short:        "Provision GPU tenants on Kamaji + HAMi",
+		Version:      version,
 		SilenceUsage: true,
 	}
 	pf := root.PersistentFlags()
 	pf.StringVar(&g.kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "management cluster kubeconfig (default $KUBECONFIG)")
-	pf.StringVar(&g.hamiChart, "hami-chart", filepath.Join(home, "src/HAMi/charts/hami"), "HAMi chart directory checked out at the pinned commit")
+	pf.StringVar(&g.hamiChart, "hami-chart", envOr("GPUTENANT_HAMI_CHART", filepath.Join(home, "src/HAMi/charts/hami")),
+		"HAMi chart directory checked out at the pinned commit (default $GPUTENANT_HAMI_CHART)")
 	pf.StringVar(&g.docker, "docker", "docker", "docker binary")
 	pf.StringVar(&g.helm, "helm", "helm", "helm binary")
-	root.AddCommand(newCreateCmd(g), newDeleteCmd(g), newStatusCmd(g), newVerifyCmd(g))
+	root.AddCommand(newCreateCmd(g), newDeleteCmd(g), newStatusCmd(g), newVerifyCmd(g), newServeCmd(g))
 	return root
+}
+
+func (g *globalFlags) options() (tenant.Options, error) {
+	return tenant.Options{Kubeconfig: g.kubeconfig, HAMiChart: g.hamiChart, DockerBin: g.docker, HelmBin: g.helm}.Complete()
 }
 
 // newEnv 校验租户名并连接管理集群。
 func newEnv(g *globalFlags, cfg tenant.Config) (*tenant.Env, error) {
-	if err := tenant.ValidateName(cfg.Tenant); err != nil {
-		return nil, err
-	}
-	if g.kubeconfig == "" {
-		return nil, errors.New("management cluster kubeconfig not set: pass --kubeconfig or set KUBECONFIG")
-	}
-	home, err := tenant.DefaultHome()
+	o, err := g.options()
 	if err != nil {
 		return nil, err
 	}
-	cache, err := os.UserCacheDir()
-	if err != nil {
-		return nil, err
-	}
-	cfg.Home = home
-	cfg.CacheDir = filepath.Join(cache, "gputenant")
-	cfg.HAMiChart = g.hamiChart
-	mgmt, err := tenant.NewKube(g.kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("management kubeconfig: %w", err)
-	}
-	return &tenant.Env{
-		Cfg:    cfg,
-		Docker: tenant.CLIDocker{Bin: g.docker},
-		Helm:   tenant.CLIHelm{Bin: g.helm},
-		Mgmt:   mgmt,
-		Log:    logf,
-	}, nil
+	return tenant.NewEnv(o, cfg, logf)
 }
 
 func logf(format string, args ...any) {
@@ -156,7 +149,7 @@ func newDeleteCmd(g *globalFlags) *cobra.Command {
 func newStatusCmd(g *globalFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "status <tenant>",
-		Short: "Show per-step state, GPU capacity and firing alerts (read-only)",
+		Short: "Show per-step state, GPU allocation and firing alerts (read-only)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			e, err := newEnv(g, tenant.Config{Tenant: args[0]})
@@ -166,60 +159,42 @@ func newStatusCmd(g *globalFlags) *cobra.Command {
 			ctx, cancel := signalContext()
 			defer cancel()
 			start := time.Now()
-			if err := e.LoadGPU(ctx); err != nil {
-				fmt.Printf("gpu config: %v\n", err)
+			r := tenant.Inspect(ctx, e)
+			for _, s := range r.Steps {
+				fmt.Printf("  %-18s %-8s %s\n", s.Name, s.State, s.Error)
 			}
-			states := tenant.Status(ctx, tenant.Steps(e))
-			done := 0
-			for _, s := range states {
-				switch {
-				case s.Err != nil:
-					fmt.Printf("  %-18s error    %v\n", s.Name, s.Err)
-				case s.Done:
-					done++
-					fmt.Printf("  %-18s done\n", s.Name)
-				default:
-					fmt.Printf("  %-18s pending\n", s.Name)
-				}
-			}
-			fmt.Printf("steps:  %d/%d done\n", done, len(states))
-			if e.Cfg.GPUCount > 0 {
-				fmt.Printf("gpu:    %s, expected nvidia.com/gpu=%d\n", tenant.GPU{Profile: e.Cfg.GPUProfile, Count: e.Cfg.GPUCount}, e.Cfg.ExpectedGPU())
+			fmt.Printf("steps:  %d/%d done\n", r.StepsDone, r.StepsTotal)
+			if r.GPU != nil {
+				fmt.Printf("gpu:    %s, expected nvidia.com/gpu=%d\n", r.GPU, e.Cfg.ExpectedGPU())
 			} else {
 				fmt.Println("gpu:    nvml-mock not installed")
 			}
-			if ng, err := e.WorkerGPU(ctx); err != nil {
-				fmt.Printf("node:   unavailable: %v\n", shortErr(err))
-			} else {
-				fmt.Printf("node:   nvidia.com/gpu capacity=%d allocatable=%d\n", ng.Capacity, ng.Allocatable)
+			if u := r.Usage; u != nil {
+				fmt.Printf("alloc:  vgpu %d/%d, memory %d/%d MiB, cores %d/%d%%\n",
+					u.VGPUAllocated, u.VGPUCapacity, u.MemAllocMiB, u.MemCapacityMiB, u.CoresAllocated, u.CoresCapacity)
 			}
-			alerts, alertErr := e.FiringAlertsQuick(ctx)
-			if err := alertErr; err != nil {
-				fmt.Printf("alerts: unavailable: %v\n", shortErr(err))
-			} else if len(alerts) == 0 {
-				fmt.Println("alerts: none firing")
-			} else {
-				fmt.Printf("alerts: firing %s\n", strings.Join(alerts, " "))
+			if r.Ready {
+				if _, failed := r.Errors["alerts"]; !failed {
+					if len(r.Alerts) == 0 {
+						fmt.Println("alerts: none firing")
+					} else {
+						fmt.Printf("alerts: firing %s\n", strings.Join(r.Alerts, " "))
+					}
+				}
+			}
+			for k, v := range r.Errors {
+				fmt.Printf("%s: unavailable: %s\n", k, v)
 			}
 			fmt.Printf("(%s)\n", time.Since(start).Round(100*time.Millisecond))
-			if done != len(states) {
-				return fmt.Errorf("tenant %s not ready: %d/%d steps done", args[0], done, len(states))
-			}
-			// 步骤都完成不代表现在是好的：调度器或隧道挂掉时 Check 照样为 true，要看告警。
-			if bad := tenant.StateAlertsIn(alerts); len(bad) > 0 {
-				return fmt.Errorf("tenant %s degraded: %s firing", args[0], strings.Join(bad, " "))
+			switch {
+			case !r.Ready:
+				return fmt.Errorf("tenant %s not ready: %d/%d steps done", args[0], r.StepsDone, r.StepsTotal)
+			case r.Degraded:
+				return fmt.Errorf("tenant %s degraded: %s firing", args[0], strings.Join(tenant.StateAlertsIn(r.Alerts), " "))
 			}
 			return nil
 		},
 	}
-}
-
-// shortErr 把“没有 kubeconfig”这种常见情况说短一点。
-func shortErr(err error) string {
-	if errors.Is(err, os.ErrNotExist) {
-		return "tenant kubeconfig not found"
-	}
-	return err.Error()
 }
 
 func newVerifyCmd(g *globalFlags) *cobra.Command {
@@ -255,4 +230,27 @@ func newVerifyCmd(g *globalFlags) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func newServeCmd(g *globalFlags) *cobra.Command {
+	var addr string
+	var refresh time.Duration
+	cmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Run the REST API and /metrics",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o, err := g.options()
+			if err != nil {
+				return err
+			}
+			ctx, cancel := signalContext()
+			defer cancel()
+			return api.Serve(ctx, api.ClusterBackend{Opts: o}, addr, refresh)
+		},
+	}
+	// 默认只监听本机：API 能开通和删除租户，镜像里还挂着 docker.sock，等同于主机 root。
+	cmd.Flags().StringVar(&addr, "addr", "127.0.0.1:8080", "listen address")
+	cmd.Flags().DurationVar(&refresh, "refresh", 30*time.Second, "how often tenant metrics are recomputed")
+	return cmd
 }

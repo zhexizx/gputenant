@@ -50,8 +50,8 @@ func Status(ctx context.Context, steps []Step) []StepState {
 
 // GPU 是租户 nvml-mock 的配置。
 type GPU struct {
-	Profile string
-	Count   int
+	Profile string `json:"profile"`
+	Count   int    `json:"count"`
 }
 
 func (g GPU) String() string { return fmt.Sprintf("%s×%d", g.Profile, g.Count) }

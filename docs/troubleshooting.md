@@ -94,6 +94,14 @@
 - **根因（推测，没有验证）：** Helm 访问 OCI 仓库时会调用 Docker Desktop 的凭证程序，这要经过 WSL 和 Windows 之间的 vsock，那次连接超时了。
 - **处理：** 重跑。如果以后经常出现，再给 chart 拉取加重试，或者像 Kamaji 一样把 chart 存进仓库。
 
+## 13. 容器化的 API 在 WSL 里访问不到
+
+- **现象：** `gputenant` 镜像以 `--network host` 运行 `serve`，容器内 `wget 127.0.0.1:18080/healthz` 返回 ok，WSL 里 `curl 127.0.0.1:18080` 连接被拒（rc=7）。第一次用 8081 端口时更隐蔽：curl 拿到 `404 page not found`，因为 WSL 里另一个进程（ModelServe 的 operator）占着 8081，请求根本没到容器。
+- **定位：** 改成监听 `0.0.0.0` 后，WSL 和 `host.docker.internal` 仍然不通，但 kind 网络里的容器经网关 `172.18.0.1:18080` 能访问。说明 Docker Desktop 的“宿主机网络”是它虚拟机自己的网络，不是 WSL 的。之前容器里能访问管理集群的 `127.0.0.1:<端口>`，是因为 kind 的端口映射也在这个虚拟机里。
+- **根因：** 和租户 API 一样（第 1 条）：WSL 到不了 Docker Desktop 虚拟机里的网络，只有 `-p` 发布的端口会转发过来。
+- **修复：** 和租户 API 的做法一致，加一个 kind 网络里的 socat 容器，`-p 127.0.0.1:18081` 转到 `172.18.0.1:18080`（`deploy/docker-compose.yml` 的 `api-proxy`）。发布端口不能和宿主机网络里 API 的端口相同，否则报 `address already in use`。Prometheus 在 kind 网络里，直接抓 `172.18.0.1:18080`。原生 Linux 上宿主机网络就是本机，不需要这一层。
+- **教训：** 测试脚本拿到响应时要确认是谁回的：`404 page not found` 不是本服务的报错格式，应该马上怀疑端口被别人占了。
+
 ## 预防措施
 
 | 问题 | 检查 | 位置 |

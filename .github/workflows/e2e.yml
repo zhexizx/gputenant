@@ -1,0 +1,83 @@
+# 端到端测试：kind 上建管理集群，用 CLI 开通 tenant-a（a100×1，和本地同一个租户），
+# gputenant verify 冒烟，再跑 TC-00~07 和 TC-09。TC-08（租户隔离）要两个租户，受 runner 资源限制只在本地跑。
+# hami、nvml-mock 镜像从 GHCR 拉（release workflow 按固定 commit 发布），不在这里从源码构建。
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 18 * * 1" # 每周一 18:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # 和 scripts/lib.sh、release.yml 保持一致（TestDockerfileMatchesLibSh 会检查）。
+  HAMI_COMMIT: 2b8f4e29c48bca376d4f6123d7c6ae7627aef579
+  K8S_TEST_INFRA_COMMIT: e7f2320c95bef01ddde12fb8c493019a558e8f43
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: host limits
+        run: sudo sysctl -w fs.inotify.max_user_watches=524288 fs.inotify.max_user_instances=512
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: pull hami and nvml-mock from GHCR
+        run: |
+          docker pull "$REGISTRY/hami:${HAMI_COMMIT:0:12}"
+          docker pull "$REGISTRY/nvml-mock:${K8S_TEST_INFRA_COMMIT:0:12}"
+          docker tag "$REGISTRY/hami:${HAMI_COMMIT:0:12}" hami:local
+          docker tag "$REGISTRY/nvml-mock:${K8S_TEST_INFRA_COMMIT:0:12}" nvml-mock:local
+
+      - name: HAMi chart at the pinned commit
+        run: |
+          git init -q ~/src/HAMi && cd ~/src/HAMi
+          git remote add origin https://github.com/Project-HAMi/HAMi.git
+          git fetch -q --depth 1 origin "$HAMI_COMMIT" && git checkout -q FETCH_HEAD
+          test -f charts/hami/Chart.yaml
+
+      - name: tools and preflight
+        run: ./scripts/00-tools.sh && ./scripts/00-preflight.sh
+
+      - name: management cluster
+        run: ./scripts/01-management.sh
+
+      - name: e2e (create, verify, status, TC)
+        run: E2E_TENANTS=tenant-a ./scripts/e2e.sh 00 01 02 03 04 05 06 07 09
+
+      - name: status (always)
+        if: always()
+        run: |
+          source scripts/lib.sh; set +e
+          [ -x bin/gputenant ] && bin/gputenant status tenant-a
+          kubectl get tcp,pods -A -o wide
+          docker ps -a
+
+      - name: upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: results/
+          retention-days: 14

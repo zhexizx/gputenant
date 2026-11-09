@@ -1,0 +1,34 @@
+
+# 09:59:28 重启后 GET /tasks/<旧 ID>，期望 404
+{"error":"task not found: tasks live in memory and are lost when the API restarts; GET /tenants/\u003cname\u003e shows the actual state"}
+HTTP 404
+
+# 09:59:28 重启后 GET /tenants/tenant-c，期望 ready=false
+{"ready":false,"stepsDone":8,"stepsTotal":14,"activeTask":null,"steps":["tenants-namespace:done","control-plane:done","admin-kubeconfig:done","api-proxy:done","kubeconfig:done","worker-node:done","join:done","kube-proxy:done","calico:pending","images:pending","nvml-mock:pending","hami:pending","admission-policy:pending","monitoring:pending"]}
+
+# 09:59:46 重启后 /metrics，期望 tenant_ready{tenant-c}=0，任务计数为空
+gputenant_alerts_firing{tenant="tenant-a"} 0
+gputenant_alerts_firing{tenant="tenant-b"} 0
+gputenant_gpu_cores_allocated{tenant="tenant-a"} 90
+gputenant_gpu_cores_allocated{tenant="tenant-b"} 0
+gputenant_gpu_cores_capacity{tenant="tenant-a"} 100
+gputenant_gpu_cores_capacity{tenant="tenant-b"} 200
+gputenant_gpu_memory_allocated_mib{tenant="tenant-a"} 30000
+gputenant_gpu_memory_allocated_mib{tenant="tenant-b"} 0
+gputenant_gpu_memory_capacity_mib{tenant="tenant-a"} 40960
+gputenant_gpu_memory_capacity_mib{tenant="tenant-b"} 32768
+gputenant_gpu_vgpu_allocated{tenant="tenant-a"} 3
+gputenant_gpu_vgpu_allocated{tenant="tenant-b"} 0
+gputenant_gpu_vgpu_capacity{tenant="tenant-a"} 10
+gputenant_gpu_vgpu_capacity{tenant="tenant-b"} 20
+gputenant_refresh_success 1
+gputenant_tasks_running 0
+gputenant_tenant_degraded{tenant="tenant-a"} 0
+gputenant_tenant_degraded{tenant="tenant-b"} 0
+gputenant_tenant_degraded{tenant="tenant-c"} 0
+gputenant_tenant_ready{tenant="tenant-a"} 1
+gputenant_tenant_ready{tenant="tenant-b"} 1
+gputenant_tenant_ready{tenant="tenant-c"} 0
+gputenant_tenant_steps_done{tenant="tenant-a"} 14
+gputenant_tenant_steps_done{tenant="tenant-b"} 14
+gputenant_tenant_steps_done{tenant="tenant-c"} 8

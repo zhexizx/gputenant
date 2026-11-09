@@ -1,0 +1,17 @@
+# 2026-11-09T10:18:26+11:00 经 API 删除不存在的 tenant-x（任务立即成功，用来验证任务面板）
+{"op":"delete","state":"succeeded","error":null}
+
+# 2026-11-09T10:18:29+11:00 tenant-b 的 hami-scheduler 缩到 0
+deployment.apps/hami-scheduler scaled
+# 2026-11-09T10:20:09+11:00 缩容后约 100 秒，降级租户 = 1
+sum(gputenant_tenant_degraded) -> [{"m":{},"v":"1"}]
+gputenant_tenant_degraded -> [{"m":{"__name__":"gputenant_tenant_degraded","tenant":"tenant-a"},"v":"0"},{"m":{"__name__":"gputenant_tenant_degraded","tenant":"tenant-b"},"v":"1"}]
+sum(gputenant_alerts_firing) -> [{"m":{},"v":"1"}]
+gputenant_alert_firing == 1 -> [{"m":{"__name__":"gputenant_alert_firing","alertname":"HamiWebhookDown","tenant":"tenant-b"},"v":"1"}]
+sum by (op, result) (gputenant_tasks_total) -> [{"m":{"op":"delete","result":"success"},"v":"1"}]
+sum by (op, result) (gputenant_task_duration_seconds_sum) / sum by (op, result) (gputenant_task_duration_seconds_count) -> [{"m":{"op":"delete","result":"success"},"v":"0.106814266"}]
+
+# 2026-11-09T10:20:09+11:00 恢复
+deployment.apps/hami-scheduler scaled
+Waiting for deployment "hami-scheduler" rollout to finish: 0 of 1 updated replicas are available...
+deployment "hami-scheduler" successfully rolled out

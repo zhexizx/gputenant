@@ -1,0 +1,33 @@
+# TC-06: 算力超分被拒绝（已用 90，再申请 30）
+# 开始: 2026-11-09T10:14:59+11:00
+
+$ tk tenant-a wait pod/gpu-share-1 --for=condition=Ready --timeout=120s
+pod/gpu-share-1 condition met
+
+$ tk tenant-a wait pod/gpu-share-2 --for=condition=Ready --timeout=120s
+pod/gpu-share-2 condition met
+
+$ tk tenant-a wait pod/gpu-share-3 --for=condition=Ready --timeout=120s
+pod/gpu-share-3 condition met
+pod/gpu-share-4 created
+
+$ tk tenant-a get pod gpu-share-4 -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+gpu-share-4   0/1     Pending   0          20s   <none>   <none>   <none>           <none>
+Events:
+  Type     Reason            Age                From            Message
+  ----     ------            ----               ----            -------
+  Warning  FailedScheduling  20s                hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientCore. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FailedScheduling  20s                hami-scheduler  0/1 nodes are available: 1 1/1 CardInsufficientCore. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+  Warning  FilteringFailed   21s (x2 over 21s)  hami-scheduler  1 nodes CardInsufficientCore(tenant-a-worker)
+  Warning  FilteringFailed   21s (x2 over 21s)  hami-scheduler  no available node, 1 nodes do not meet
+
+$ kubectl get pod gpu-share-4 -o json
+（5120 字节 JSON，已校验）
+CHECK PASS: gpu-share-4 schedulerName (= hami-scheduler)
+CHECK PASS: gpu-share-4 没有被调度 (= )
+CHECK PASS: gpu-share-4 phase (= Pending)
+CHECK PASS: 事件给出算力不足的原因
+
+# 结束: 2026-11-09T10:15:22+11:00
+RESULT TC-06 PASS (4 checks, 0 failed)

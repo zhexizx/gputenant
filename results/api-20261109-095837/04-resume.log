@@ -1,0 +1,42 @@
+
+# 09:59:46 再次 POST，期望已完成的步骤 skipped
+{"state":"succeeded","error":null,"started":"2026-11-09T09:59:46.69999253+11:00","finished":"2026-11-09T10:03:08.259035483+11:00","steps":["tenants-namespace:skipped","control-plane:skipped","admin-kubeconfig:skipped","api-proxy:skipped","kubeconfig:skipped","worker-node:skipped","join:skipped","kube-proxy:skipped","calico:applying","calico:applied","images:applying","images:applied","nvml-mock:applying","nvml-mock:applied","hami:applying","hami:applied","admission-policy:applying","admission-policy:applied","monitoring:applying","monitoring:applied"]}
+
+# 10:03:12 GET /tenants/tenant-c
+{"tenant":"tenant-c","ready":true,"degraded":false,"stepsDone":14,"stepsTotal":14,"gpu":{"profile":"t4","count":1},"usage":{"vgpuCapacity":10,"vgpuAllocated":0,"memCapacityMiB":16384,"memAllocatedMiB":0,"coresCapacity":100,"coresAllocated":0},"firingAlerts":[]}
+
+# 10:03:31 /metrics
+gputenant_alerts_firing{tenant="tenant-a"} 0
+gputenant_alerts_firing{tenant="tenant-b"} 0
+gputenant_alerts_firing{tenant="tenant-c"} 0
+gputenant_gpu_cores_allocated{tenant="tenant-a"} 90
+gputenant_gpu_cores_allocated{tenant="tenant-b"} 0
+gputenant_gpu_cores_allocated{tenant="tenant-c"} 0
+gputenant_gpu_cores_capacity{tenant="tenant-a"} 100
+gputenant_gpu_cores_capacity{tenant="tenant-b"} 200
+gputenant_gpu_cores_capacity{tenant="tenant-c"} 100
+gputenant_gpu_memory_allocated_mib{tenant="tenant-a"} 30000
+gputenant_gpu_memory_allocated_mib{tenant="tenant-b"} 0
+gputenant_gpu_memory_allocated_mib{tenant="tenant-c"} 0
+gputenant_gpu_memory_capacity_mib{tenant="tenant-a"} 40960
+gputenant_gpu_memory_capacity_mib{tenant="tenant-b"} 32768
+gputenant_gpu_memory_capacity_mib{tenant="tenant-c"} 16384
+gputenant_gpu_vgpu_allocated{tenant="tenant-a"} 3
+gputenant_gpu_vgpu_allocated{tenant="tenant-b"} 0
+gputenant_gpu_vgpu_allocated{tenant="tenant-c"} 0
+gputenant_gpu_vgpu_capacity{tenant="tenant-a"} 10
+gputenant_gpu_vgpu_capacity{tenant="tenant-b"} 20
+gputenant_gpu_vgpu_capacity{tenant="tenant-c"} 10
+gputenant_refresh_success 1
+gputenant_task_duration_seconds_count{op="create",result="success"} 1
+gputenant_tasks_running 0
+gputenant_tasks_total{op="create",result="success"} 1
+gputenant_tenant_degraded{tenant="tenant-a"} 0
+gputenant_tenant_degraded{tenant="tenant-b"} 0
+gputenant_tenant_degraded{tenant="tenant-c"} 0
+gputenant_tenant_ready{tenant="tenant-a"} 1
+gputenant_tenant_ready{tenant="tenant-b"} 1
+gputenant_tenant_ready{tenant="tenant-c"} 1
+gputenant_tenant_steps_done{tenant="tenant-a"} 14
+gputenant_tenant_steps_done{tenant="tenant-b"} 14
+gputenant_tenant_steps_done{tenant="tenant-c"} 14
