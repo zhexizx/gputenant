@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 测简历数字 X：管理集群已就绪、镜像已构建时，N 次 `time gputenant create` 的中位数（README「简历数字」）。
+# 测简历数字 X：管理集群已就绪、镜像已构建时，N 次 `time gputenant create` 的中位数（结果见 README「主要结果」）。
 # 每轮：确认租户不存在 → time create（从零开通）→ status 确认 14/14 → delete。结果写到 results/measure-x-<时间>/。
 # 用法: measure-create.sh [租户名] [轮数]（默认 tenant-c、3 轮，t4×2）
 source "$(dirname "$0")/lib.sh"

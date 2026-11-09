@@ -1,6 +1,6 @@
 # 降级实验报告：Konnectivity 隧道中断时的 GPU 调度
 
-依据 `多租户GPU平台-总计划.md` 附录的 Day 4–5。实验在 2026-11-02 进行，环境是 `tenant-b`：2 张模拟 T4，每张 16384 MiB，`nvidia.com/gpu=20`。
+实验设计来自项目计划（仓库外）的 Day 4–5。实验在 2026-11-02 进行，环境是 `tenant-b`：2 张模拟 T4，每张 16384 MiB，`nvidia.com/gpu=20`。
 
 以下第 1~4 条结论来自 `results/day4-5-20261102-194838/`，这一轮四个步骤都返回 0；2026-11-03 加入默认防护后重跑了一轮（`results/day4-5-20261103-113034/`，五个步骤都返回 0），结论一致。webhook 故障的结论见文末“2026-11-03 补充”。原始输出在各步骤的子目录里，探针汇总在 `summary.md`。
 
@@ -89,6 +89,9 @@
 | `results/day4-5-20261103-111859/` | 前三步通过；webhook 故障一开始就中止：上一步的隧道告警还没解除（troubleshooting 第 10 条） |
 | `results/day4-5-20261103-113034/` | 加入默认防护和 `gpu-init` 探针后，五个步骤全部完成，`overall=0`。其中 webhook 故障这一步的 `HamiWebhookFailOpen` 触发不能归因，见下文 |
 | `results/webhook-down-20261103-115651/` | 单独重跑 webhook 故障，开始前等所有告警解除，`rc=0`，webhook 故障的结论依据这一轮 |
+| `results/day4-5-20261109-162805/` | 复查 `guard`：和 `04-verify-env.sh` 写在同一行启动，前置检查没有误报（troubleshooting 第 9 条）。前四步都返回 0，探针结果和前两轮一致；告警这一步下载 Prometheus chart 时 GitHub 返回 504，没有执行 |
+| `results/day4-5-20261109-164827/` | 单独重跑告警，同样因为 chart 下载 504 中止，环境已自动恢复 |
+| `results/day4-5-20261109-165724/` | 单独重跑告警，两条检查都通过（见下文“告警耗时的三轮对比”）；结束时恢复 Prometheus 默认配置又遇到 504，之后用 `experiments/restore.sh` 恢复 |
 
 ## 复现
 
@@ -147,15 +150,15 @@
    - `HamiWebhookFailOpen`：`activeAt` 在缩容后 26 秒，随第一批探针的放行触发。apiserver 的 `apiserver_admission_webhook_fail_open_count` 从 24 增加到 32，对应这一轮的 8 次 Pod 创建，包括后来被准入策略拒绝的 4 次：放行发生在 webhook 阶段，校验在它之后。
 4. 前一轮里 `HamiWebhookFailOpen` 的 `activeAt` 比缩容早 149 秒，是上一步隧道实验留下的，这一轮之前的检查把它误判为通过。之后改为开始前等它解除，并要求 `activeAt` 晚于缩容（troubleshooting 第 11 条）。
 
-### 告警耗时的两轮对比
+### 告警耗时的三轮对比
 
-| 告警 | 2026-11-02 | 2026-11-03 |
-|---|---|---|
-| `ApiserverToNodePathDown`（阻断后 firing） | 86 秒 | 116 秒 |
-| `KonnectivityAgentDisconnected`（阻断后 firing） | 136 秒 | 134 秒 |
-| `KonnectivityAgentUnavailable` | 351 秒内未触发 | 349 秒内未触发 |
+| 告警 | 2026-11-02 | 2026-11-03 | 2026-11-09 |
+|---|---|---|---|
+| `ApiserverToNodePathDown`（阻断后 firing） | 86 秒 | 116 秒 | 105 秒 |
+| `KonnectivityAgentDisconnected`（阻断后 firing） | 136 秒 | 134 秒 | 138 秒 |
+| `KonnectivityAgentUnavailable` | 351 秒内未触发 | 349 秒内未触发 | 339 秒内未触发 |
 
-两轮都是 `for: 1m`、抓取和评估间隔 15 秒，脚本每 15 秒左右查一次，所以 firing 时间有十几秒的误差。
+三轮都是 `for: 1m`、抓取和评估间隔 15 秒，脚本每 15 秒左右查一次，所以 firing 时间有十几秒的误差。
 
 ### 局限
 

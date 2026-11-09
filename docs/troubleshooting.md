@@ -72,7 +72,7 @@
 
 - **现象：** `verify-from-scratch.sh` 和 `experiments/run.sh` 写在同一行命令里，重建通过后，实验立刻报 `有其他测试或环境脚本在运行`，打印出来的是这行命令本身（`results/day4-5-20261103-111733/`）。
 - **根因：** `guard` 用 `pgrep -af` 按命令行匹配 `scripts/verify-from-scratch.sh` 等脚本名。整行命令的父 shell 一直在运行，命令行里包含这个脚本名，于是匹配到了自己。
-- **修复：** `guard` 匹配时排除自己和全部祖先进程（沿 `/proc/<pid>/status` 的 `PPid` 往上找）。保护没有放宽：真正在运行的环境脚本是独立的进程，不会是实验的祖先，照样会被拦下。已用两个场景验证：外层命令行带着已结束的 `scripts/verify-from-scratch.sh` 时不再误报；另起一个 `scripts/up.sh` 进程时仍然报冲突。
+- **修复：** `guard` 匹配时排除自己和全部祖先进程（沿 `/proc/<pid>/status` 的 `PPid` 往上找）。保护没有放宽：真正在运行的环境脚本是独立的进程，不会是实验的祖先，照样会被拦下。已用两个场景验证：外层命令行带着已结束的 `scripts/verify-from-scratch.sh` 时不再误报；另起一个 `scripts/up.sh` 进程时仍然报冲突。2026-11-09 在真实实验里复现了原场景：`bash -c './scripts/04-verify-env.sh tenant-a; ./experiments/run.sh'`，前一个脚本已结束、父 shell 的命令行里还带着它，前置检查判定没有冲突，基线、方案 A、方案 B、webhook 故障四步都返回 0（`results/day4-5-20261109-162805/`）。
 
 ## 10. 上一步的隧道告警还没解除，webhook 故障实验就中止了
 
@@ -101,6 +101,14 @@
 - **根因：** 和租户 API 一样（第 1 条）：WSL 到不了 Docker Desktop 虚拟机里的网络，只有 `-p` 发布的端口会转发过来。
 - **修复：** 和租户 API 的做法一致，加一个 kind 网络里的 socat 容器，`-p 127.0.0.1:18081` 转到 `172.18.0.1:18080`（`deploy/docker-compose.yml` 的 `api-proxy`）。发布端口不能和宿主机网络里 API 的端口相同，否则报 `address already in use`。Prometheus 在 kind 网络里，直接抓 `172.18.0.1:18080`。原生 Linux 上宿主机网络就是本机，不需要这一层。
 - **教训：** 测试脚本拿到响应时要确认是谁回的：`404 page not found` 不是本服务的报错格式，应该马上怀疑端口被别人占了。
+
+## 14. GitHub 对 Prometheus chart 间歇返回 504
+
+- **现象：** 2026-11-09 跑 `experiments/alert.sh`，`helm upgrade` 报 `failed to fetch .../prometheus-29.40.3.tgz : 504 Gateway Timeout`，实验中止（`results/day4-5-20261109-162805/`、`results/day4-5-20261109-164827/`）。之后一轮实验本身通过，但结束时恢复 Prometheus 默认配置又遇到 504，环境停在叠加了实验规则的状态（`results/day4-5-20261109-165724/`）。
+- **定位：** `curl -I` 同一个地址，GitHub 在 0.06 秒内直接返回 504（`x-github-edge-region: australiaeast`）；同一时间别的版本的 release 文件（`prometheus-29.39.0.tgz`）返回正常的 302。16:47 到 17:10 之间时好时坏：每 30 秒探测一次，约 8 分钟后恢复，几分钟后又出现。
+- **根因：** GitHub 边缘节点对这一个 release 文件的问题，不在本项目。本项目受影响是因为 Prometheus chart 每次都从 GitHub 下载，没有用本地缓存。
+- **处理：** 等这个文件能下载后重跑 `alert.sh`，再用 `experiments/restore.sh` 恢复（重试第 3 次成功，实验规则已移除，两个租户 `status` 都是 14/14）。没有改代码。`gputenant create` 的 `monitoring` 步骤也会遇到同样的问题，重跑即可，已完成的步骤会跳过。如果以后经常出现，像 Kamaji 一样把 chart 存进仓库并校验 sha256。
+- **教训：** 恢复步骤也依赖网络时，恢复本身可能失败。脚本这次正确地报了“环境恢复失败”，没有假装恢复成功，所以要看最后一行再离开。
 
 ## 预防措施
 

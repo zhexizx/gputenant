@@ -1,0 +1,7 @@
+
+[16:32:00] 恢复环境
+ok: hami-scheduler Ready
+ok: 默认准入策略已生效
+ok: 默认告警规则已加载
+ok: 隧道恢复
+环境已恢复：无阻断规则，策略=Ignore，默认准入策略生效，hami-scheduler Ready，无探针，gpu=20
