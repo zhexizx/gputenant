@@ -8,7 +8,7 @@
 
 总计划原文在 `多租户GPU平台-总计划.md`（仓库外）。它的附录已过时，**以本仓库为准**。
 
-## 当前状态（2026-11-08）
+## 当前状态（2026-11-09）
 
 | 部分 | 状态 | 证据 |
 |---|---|---|
@@ -18,8 +18,11 @@
 | 默认防护：准入策略和 4 条告警，新租户自动部署 | ✅ 完成，告警都真实触发过 | `scripts/05-tenant-guardrails.sh`、TC-09 |
 | `gputenant create`、`delete` | ✅ 14 个 Step；kill 后重跑能接着做完，半成品租户能删干净 | `results/cli-20261108-165831/`、`docs/work-summary-2026-11-08.md` |
 | `gputenant status`、`verify` | ✅ `status` 约 3 秒返回，有告警 firing 时判为 degraded；`verify` 在 hami-scheduler 停掉时报失败，恢复后通过 | `results/cli-status-verify-20261108-204408/` |
-| 本地 e2e、PR CI | ✅ `scripts/e2e.sh` 通过；CI（gofmt、vet、单元测试、构建、shellcheck）本地全部通过，GitHub 上还没跑过 | `results/e2e-20261108-210436/`、`results/20261108-210641/`、`.github/workflows/ci.yml` |
-| CI e2e、REST API、GHCR、Grafana | ⬜ 没开始 | |
+| 本地 e2e、PR CI | ✅ `scripts/e2e.sh` 通过；PR CI（gofmt、vet、单元测试、构建、shellcheck）在 GitHub 上通过 | `results/e2e-20261108-210436/`、PR #8 |
+| REST API（`gputenant serve`）和 `/metrics` | ✅ 202/409/404；API 被 `kill -9` 后重启，旧任务 404，半成品租户报 not ready，指标 `tenant_ready=0`；再次提交从断点续做 | `results/api-20261109-095837/` |
+| `gputenant` 镜像 | ✅ 本地构建的镜像从零开通、删除租户都通过，文件属主是当前用户；**还没发布到 GHCR**（release workflow 要合并后触发） | `results/image-20261109-100723/`、`Dockerfile`、`.github/workflows/release.yml` |
+| CI e2e | ⬜ workflow 已写好；本地模拟同样的流程（只建 tenant-a，TC-00~07、09）通过。要等 GHCR 上有 hami、nvml-mock 镜像后才能在 GitHub 上跑 | `results/e2e-20261109-101301/`、`results/20261109-101406/`、`.github/workflows/e2e.yml` |
+| Grafana 看板 | ✅ 15 个面板的查询逐个在真实数据上验证过，包括故障时的降级和告警；面板外观还要人工在浏览器里看 | `results/dashboard-20261109-101717/`、`deploy/` |
 | 真实 GPU 验证 | ⬜ 有条件执行，见下文 | |
 
 **还没收尾的：**
@@ -36,6 +39,7 @@
 ./experiments/run.sh             # 降级实验：基线 → 方案 A → 方案 B → webhook 故障 → 告警
 ./experiments/restore.sh         # 实验被强行中断后恢复
 ./scripts/verify-from-scratch.sh # 删除、从零重建、跑全部测试
+./scripts/dashboard.sh up        # API + Prometheus + Grafana（先 docker build -t gputenant:dev .）
 ./scripts/down.sh                # 只删除本实验的资源
 ```
 
@@ -47,6 +51,18 @@ bin/gputenant status tenant-c   # 只读：每一步的状态、GPU 容量、fir
 bin/gputenant verify tenant-c   # 冒烟测试，会重启 kube-proxy、跑一个短暂的 GPU Pod
 bin/gputenant delete tenant-c
 ```
+
+REST API（`bin/gputenant serve` 默认只监听 `127.0.0.1:8080`：它能开通和删除租户）：
+
+```bash
+curl -X POST localhost:8080/tenants -d '{"name":"tenant-c","gpuProfile":"t4","gpuCount":1}'  # 202 + 任务
+curl localhost:8080/tasks/<任务 ID>     # 进度；API 重启后旧任务返回 404
+curl localhost:8080/tenants/tenant-c    # 每次重新跑 Check，状态以集群为准
+curl -X DELETE localhost:8080/tenants/tenant-c
+curl localhost:8080/metrics
+```
+
+镜像 `gputenant`（CLI 和 API）要用宿主机网络、挂载 `docker.sock`，并以当前用户运行，否则写出来的 kubeconfig 属于 root。`scripts/dashboard.sh up` 已经处理好这些。WSL + Docker Desktop 上本机访问不到宿主机网络里的端口，API 经 socat 代理暴露在 `127.0.0.1:18081`（`docs/troubleshooting.md` 第 13 条）。
 
 租户 kubeconfig 在 `kubeconfigs/<租户>/`（脚本把 `GPUTENANT_HOME` 默认设为 `kubeconfigs/`；单独运行 CLI 时默认是 `~/.gputenant/`），含集群管理员凭证，已被 `.gitignore` 排除。排障记录见 `docs/troubleshooting.md`。
 
@@ -86,14 +102,15 @@ bin/gputenant delete tenant-c
 **CI 和发布**
 
 - 每个 PR 跑 lint、单元测试和构建；合入 `main`、定时或手动触发时跑 e2e。
-- CI 的 e2e 只建一个 t4×2 的租户，跑 TC-01~07 和 TC-09。TC-08（租户隔离）需要两个租户，受 runner 资源限制，只在本地跑。
+- CI 的 e2e 只建 tenant-a（a100×1，和本地同一个租户），跑 TC-00~07 和 TC-09。原定 t4×2，但 TC-04~06 要 3 个 10000 MiB 的 Pod 共享一张卡，t4 每张卡只有 16384 MiB，用同一个租户就不用给测试写两套参数。TC-08（租户隔离）需要两个租户，受 runner 资源限制，只在本地跑。
 - 打版本 tag 时发布到 GHCR：`gputenant` 镜像（CLI 和 API，内含 docker CLI 和 helm，运行时挂载 `docker.sock`），以及按固定 commit 打 tag 的 `hami`、`nvml-mock` 镜像，供 CI 拉取，CI 里不从源码构建。
 
 **API 和看板**
 
 - 接口按总计划：`POST`/`DELETE` 返回 `202` 和任务 ID；同一租户同时只能有一个任务，重复请求返回 `409`；只运行一个实例，任务进度放在内存里，重启后以 `Check` 查到的实际状态为准。
-- API 的 `/metrics` 导出跨租户的指标：租户状态、开通耗时和结果、GPU 容量和已分配量（从 HAMi 注解计算）、各租户 firing 的告警数（经 apiserver 代理查询租户内的 Prometheus）。
-- 另起一个 Prometheus 和一个 Grafana，用 docker compose 跑在 kind 网络上，只抓取 API 的 `/metrics`。看板定义存进仓库。看板显示的是**分配率**，不是利用率。
+- API 的 `/metrics` 导出跨租户的指标：租户状态、开通耗时和结果、GPU 容量和已分配量（从 HAMi 注解计算）、各租户 firing 的告警。租户状态由后台每 30 秒刷新成快照，抓取时直接读快照；读不到告警时不导出告警数，免得被当成 0。
+- 告警不经 apiserver 代理查询（原计划如此），和 CLI 一样在节点内 curl 租户 Prometheus 的 ClusterIP：apiserver 代理要经过 Konnectivity 隧道，隧道断开时正好查不到。
+- 另起一个 Prometheus 和一个 Grafana，用 docker compose 跑在 kind 网络上，只抓取 API 的 `/metrics`（`deploy/`）。看板定义存进仓库。看板显示的是**分配率**，不是利用率。
 
 **简历数字**
 

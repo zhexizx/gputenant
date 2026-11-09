@@ -1,0 +1,56 @@
+# gputenant API + 看板。API 在宿主机网络（要访问管理集群的 127.0.0.1 端口和租户代理端口），
+# Prometheus、Grafana 在 kind 网络，经 kind 网关抓取 API 的 /metrics。
+# 用法（仓库根目录）：
+#   source scripts/lib.sh
+#   GPUTENANT_IMAGE=gputenant:dev docker compose -f deploy/docker-compose.yml up -d
+# 访问：API http://127.0.0.1:18081，Prometheus http://127.0.0.1:9090，Grafana http://127.0.0.1:3000（匿名只读）
+# WSL + Docker Desktop 上本机到不了宿主机网络里的端口，所以 API 再经 socat 代理（api-proxy）暴露，
+# 和租户 API 的做法一样。原生 Linux 上可以直接访问 127.0.0.1:18080。
+name: gputenant
+
+services:
+  api:
+    image: ${GPUTENANT_IMAGE:-ghcr.io/zhexizx/gputenant:latest}
+    network_mode: host
+    user: "${UID:-1000}:${GID:-1000}"
+    group_add: ["${DOCKER_GID:-1001}"]
+    command: ["serve", "--addr", "0.0.0.0:18080"]
+    environment:
+      KUBECONFIG: /data/management.kubeconfig
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../kubeconfigs:/data
+    restart: unless-stopped
+
+  api-proxy:
+    image: alpine/socat:1.8.0.3
+    networks: [kind]
+    ports: ["127.0.0.1:18081:18081"]
+    command: ["tcp-listen:18081,fork,reuseaddr", "tcp:172.18.0.1:18080"]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    networks: [kind]
+    ports: ["127.0.0.1:9090:9090"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=7d"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    networks: [kind]
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/gputenant.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+
+networks:
+  kind:
+    external: true

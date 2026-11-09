@@ -1,0 +1,22 @@
+[10:13:06]   triggered Kamaji reconcile, waiting 30s
+[10:13:36]   restarted lab-kube-proxy, waiting 20s
+[10:13:56]   ok: kube-proxy stable after restart
+[10:13:56] ok   kube-proxy stable after reconcile and restart
+[10:13:57] ok   ClusterIP rules present
+[10:13:57] ok   no Kamaji-managed kube-proxy
+[10:13:57] ok   API reachable
+[10:13:57] ok   node Ready
+[10:13:57]   nvidia.com/gpu=10 (a100×1)
+[10:13:57] ok   nvidia.com/gpu allocatable
+[10:13:57] ok   tunnel (apiserver → konnectivity → kubelet)
+[10:13:57] ok   hami-scheduler Ready
+[10:13:57] ok   HAMi uses local images
+[10:14:02]   ok: verify Pod Running
+[10:14:02] ok   gpumem Pod scheduled by hami-scheduler and Running
+[10:14:03] ok   admission policy denies GPU Pods that skip the webhook
+[10:14:03] ok   alert rules loaded
+[10:14:03]   ok: tunnel probe, hami-scheduler and agent signals healthy
+[10:14:03] ok   alert signals healthy
+[10:14:03]   ok: no state alert firing
+[10:14:03] ok   no state alert firing
+tenant tenant-a verified in 57s

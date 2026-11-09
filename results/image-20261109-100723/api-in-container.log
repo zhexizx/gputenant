@@ -1,0 +1,31 @@
+# 2026-11-09T10:07:23+11:00 镜像 gputenant:dev 以当前用户运行 serve（宿主机网络、挂载 docker.sock 和 kubeconfigs/），监听 18080
+# WSL 到不了 Docker Desktop 虚拟机的宿主机网络，和租户 API 一样经 socat 代理访问：127.0.0.1:18081 → 172.18.0.1:18080
+gputenant version dev-05b71e6
+
+# GET /tenants
+[{"tenant":"tenant-a"},{"tenant":"tenant-b"}]
+
+# POST tenant-d t4×1
+task 7abb012deecb83e6
+{"state":"succeeded","error":null,"started":"2026-11-08T23:07:24.470845471Z","finished":"2026-11-08T23:10:59.731647802Z","steps":["tenants-namespace:skipped","control-plane:applied","admin-kubeconfig:applied","api-proxy:applied","kubeconfig:applied","worker-node:applied","join:applied","kube-proxy:applied","calico:applied","images:applied","nvml-mock:applied","hami:applied","admission-policy:applied","monitoring:applied"]}
+
+# GET /tenants/tenant-d
+{"tenant":"tenant-d","ready":true,"degraded":false,"stepsDone":14,"stepsTotal":14,"gpu":{"profile":"t4","count":1},"usage":{"vgpuCapacity":10,"vgpuAllocated":0,"memCapacityMiB":16384,"memAllocatedMiB":0,"coresCapacity":100,"coresAllocated":0},"firingAlerts":[]}
+
+# 宿主机上的文件属主（uid gid 应为 1000 1000）
+1000 1000 700 kubeconfigs/tenant-d
+1000 1000 600 kubeconfigs/tenant-d/internal.kubeconfig
+1000 1000 600 kubeconfigs/tenant-d/kubeconfig
+1000 1000 755 kubeconfigs/.cache
+
+# 宿主机 CLI 读取同一个租户
+gpu:    t4×1, expected nvidia.com/gpu=10
+alloc:  vgpu 0/10, memory 0/16384 MiB, cores 0/100%
+alerts: none firing
+(2.8s)
+
+# DELETE tenant-d
+{"state":"succeeded","error":null}
+GET /tenants/tenant-d -> HTTP 404
+容器: []
+ls: cannot access 'kubeconfigs/tenant-d': No such file or directory

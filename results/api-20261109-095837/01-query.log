@@ -1,0 +1,43 @@
+
+# 09:58:38 GET /tenants
+[{"tenant":"tenant-a"},{"tenant":"tenant-b"}]
+HTTP 200
+
+# 09:58:38 GET /tenants/tenant-a（计时）
+{"tenant":"tenant-a","ready":true,"degraded":false,"stepsDone":14,"stepsTotal":14,"gpu":{"profile":"a100","count":1},"usage":{"vgpuCapacity":10,"vgpuAllocated":3,"memCapacityMiB":40960,"memAllocatedMiB":30000,"coresCapacity":100,"coresAllocated":90},"firingAlerts":[]}
+
+real	0m2.589s
+user	0m0.007s
+sys	0m0.005s
+
+# 09:58:40 GET /tenants/nope
+{"error":"tenant nope not found"}
+HTTP 404
+
+# 09:58:40 POST 参数错误
+{"error":"--gpu-profile must be a100 or t4, got \"h100\""}
+HTTP 400
+
+# 09:58:56 /metrics（启动后第一次刷新完成）
+gputenant_alerts_firing{tenant="tenant-a"} 0
+gputenant_alerts_firing{tenant="tenant-b"} 0
+gputenant_gpu_cores_allocated{tenant="tenant-a"} 90
+gputenant_gpu_cores_allocated{tenant="tenant-b"} 0
+gputenant_gpu_cores_capacity{tenant="tenant-a"} 100
+gputenant_gpu_cores_capacity{tenant="tenant-b"} 200
+gputenant_gpu_memory_allocated_mib{tenant="tenant-a"} 30000
+gputenant_gpu_memory_allocated_mib{tenant="tenant-b"} 0
+gputenant_gpu_memory_capacity_mib{tenant="tenant-a"} 40960
+gputenant_gpu_memory_capacity_mib{tenant="tenant-b"} 32768
+gputenant_gpu_vgpu_allocated{tenant="tenant-a"} 3
+gputenant_gpu_vgpu_allocated{tenant="tenant-b"} 0
+gputenant_gpu_vgpu_capacity{tenant="tenant-a"} 10
+gputenant_gpu_vgpu_capacity{tenant="tenant-b"} 20
+gputenant_refresh_success 1
+gputenant_tasks_running 0
+gputenant_tenant_degraded{tenant="tenant-a"} 0
+gputenant_tenant_degraded{tenant="tenant-b"} 0
+gputenant_tenant_ready{tenant="tenant-a"} 1
+gputenant_tenant_ready{tenant="tenant-b"} 1
+gputenant_tenant_steps_done{tenant="tenant-a"} 14
+gputenant_tenant_steps_done{tenant="tenant-b"} 14

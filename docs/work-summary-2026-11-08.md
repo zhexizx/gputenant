@@ -82,7 +82,7 @@
 | `verify` 发现故障 | ✅ hami-scheduler 缩到 0：4 项失败（调度器 Ready、gpumem Pod 被准入策略拒绝、信号、告警），退出码 1；恢复后全过 | `verify-b-broken-2.log` |
 | GPU 参数不一致时 `create` 拒绝 | ✅ tenant-a 是 a100×1，传 t4×2 时直接报错 | `create-a-mismatch.log` |
 | 本地 e2e | ✅ `scripts/e2e.sh`：两个租户 create 全部跳过（2 秒）、verify 通过、status 14/14，TC-00~09 全部 PASS | `results/e2e-20261108-210436/`、`results/20261108-210641/` |
-| PR CI | 本地跑过同样的命令（gofmt、vet、`go test -race`、构建、shellcheck 0.10.0）都通过；**GitHub 上还没跑过** | `.github/workflows/ci.yml` |
+| PR CI | 本地跑过同样的命令（gofmt、vet、`go test -race`、构建、shellcheck 0.10.0）都通过；之后在 PR #8 上通过 | `.github/workflows/ci.yml` |
 
 ### 实现
 
@@ -117,5 +117,5 @@
 
 ## 还没做
 
-- 推送后确认 GitHub Actions 真的跑通，然后建 PR。
+- ~~推送后确认 GitHub Actions 真的跑通，然后建 PR。~~ 已完成：PR #8，CI 通过。
 - 简历数字 `X` 还没测。

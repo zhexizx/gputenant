@@ -190,3 +190,45 @@ func TestVersionsMatchLibSh(t *testing.T) {
 		}
 	}
 }
+
+// Dockerfile 里的 HAMi commit 和 helm 版本要和 lib.sh 一致，否则镜像里装的 HAMi 和本地测过的不是同一个。
+func TestDockerfileMatchesLibSh(t *testing.T) {
+	lib, err := os.ReadFile("../../scripts/lib.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	df, err := os.ReadFile("../../Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	get := func(data []byte, re string) string {
+		m := regexp.MustCompile(re).FindSubmatch(data)
+		if m == nil {
+			t.Fatalf("pattern %s not found", re)
+		}
+		return string(m[1])
+	}
+	if a, b := get(lib, `(?m)^HAMI_COMMIT=(\S+)$`), get(df, `(?m)^ARG HAMI_COMMIT=(\S+)$`); a != b {
+		t.Errorf("HAMI_COMMIT: lib.sh %s, Dockerfile %s", a, b)
+	}
+	if a, b := get(lib, `(?m)^HELM_VERSION=v(\S+)$`), get(df, `(?m)^FROM alpine/helm:(\S+) AS helm$`); a != b {
+		t.Errorf("helm: lib.sh v%s, Dockerfile %s", a, b)
+	}
+	for _, wf := range []string{"release.yml", "e2e.yml"} {
+		data := mustRead(t, "../../.github/workflows/"+wf)
+		for _, v := range []string{"HAMI_COMMIT", "K8S_TEST_INFRA_COMMIT"} {
+			if a, b := get(lib, `(?m)^`+v+`=(\S+)$`), get(data, v+`: (\S+)`); a != b {
+				t.Errorf("%s: lib.sh %s, %s %s", v, a, wf, b)
+			}
+		}
+	}
+}
+
+func mustRead(t *testing.T, path string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}

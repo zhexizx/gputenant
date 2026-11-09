@@ -216,3 +216,32 @@ func TestWaitUntilInterrupted(t *testing.T) {
 		t.Fatalf("got %v, want interrupted", err)
 	}
 }
+
+func TestParseAllocated(t *testing.T) {
+	got := parseAllocated("GPU-0,NVIDIA,10000,30:;")
+	if len(got) != 1 || got[0].MemMiB != 10000 || got[0].Cores != 30 {
+		t.Fatalf("single: %+v", got)
+	}
+	// 两个容器，第二个分到两张卡。
+	got = parseAllocated("GPU-0,NVIDIA,1000,10:;GPU-0,NVIDIA,2000,20:GPU-1,NVIDIA,3000,30:;")
+	if len(got) != 3 || got[2].UUID != "GPU-1" || got[2].MemMiB != 3000 {
+		t.Fatalf("multi: %+v", got)
+	}
+	// to-allocate 分配完后变成 ";;"；格式不对的项跳过。
+	for _, s := range []string{"", ";;", "GPU-0,NVIDIA,x,10:;", "garbage"} {
+		if got := parseAllocated(s); len(got) != 0 {
+			t.Errorf("%q: %+v", s, got)
+		}
+	}
+}
+
+func TestNodeGPUCapacity(t *testing.T) {
+	ann := `[{"id":"GPU-0","count":10,"devmem":16384,"devcore":100},{"id":"GPU-1","index":1,"count":10,"devmem":16384,"devcore":100}]`
+	u, err := nodeGPUCapacity(ann)
+	if err != nil || u.VGPUCapacity != 20 || u.MemCapacityMiB != 32768 || u.CoresCapacity != 200 {
+		t.Fatalf("%+v %v", u, err)
+	}
+	if _, err := nodeGPUCapacity(""); err == nil {
+		t.Fatal("missing annotation accepted")
+	}
+}

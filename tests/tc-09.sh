@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 默认防护：两个租户都部署了准入策略和告警，并且准入策略真的生效。
+# 默认防护：每个租户都部署了准入策略和告警，并且准入策略真的生效。
 # 用 --dry-run=server，不创建 Pod。带 hami.io/webhook=ignore 标签的 Pod 会跳过 HAMi webhook，
 # schedulerName 保持 default-scheduler，和隧道断开、webhook 挂掉时的效果一样，不用真的制造故障。
 source "$(dirname "$0")/lib.sh"
@@ -34,7 +34,8 @@ dry_run() {
 }
 DENY='GPU Pod must use hami-scheduler'
 
-for t in "$A" "$B"; do
+# CI 只建 tenant-a，用 TC_TENANTS 指定；默认两个租户都测。
+for t in ${TC_TENANTS:-$A $B}; do
   echo; echo "===== $t ====="
   run tk "$t" get validatingadmissionpolicy,validatingadmissionpolicybinding require-hami-scheduler
   check "$t 有准入策略和绑定" tk "$t" get validatingadmissionpolicybinding require-hami-scheduler

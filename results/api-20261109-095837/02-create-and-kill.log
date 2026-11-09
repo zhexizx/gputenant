@@ -1,0 +1,16 @@
+
+# 09:58:56 POST /tenants tenant-c t4×1
+{"id":"8f14afa3a38cc3c8","tenant":"tenant-c","op":"create","state":"running","started":"2026-11-09T09:58:56.913056852+11:00","steps":[],"log":[]}
+
+# 09:58:56 开通中再 POST 一次，期望 409
+{"error":"tenant tenant-c already has a running create task","task":"8f14afa3a38cc3c8"}
+HTTP 409
+
+# 09:58:56 开通中 DELETE，期望 409
+HTTP 409
+
+# 09:59:27 join 完成后的任务状态
+{"state":"running","steps":["tenants-namespace:skipped","control-plane:applying","control-plane:applied","admin-kubeconfig:applying","admin-kubeconfig:applied","api-proxy:applying","api-proxy:applied","kubeconfig:applying","kubeconfig:applied","worker-node:applying","worker-node:applied","join:applying","join:applied","kube-proxy:applying"]}
+
+# 09:59:27 kill -9 API（模拟崩溃）
+/tmp/claude-1000/-home-Zecy/04c6dc50-9b89-4519-9478-7ea76859f323/scratchpad/api-test.sh: line 31: 608938 Killed                  bin/gputenant serve --refresh 15s >> "$R/api-server.log" 2>&1

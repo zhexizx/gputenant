@@ -1,0 +1,19 @@
+  tenants-namespace  done     
+  control-plane      done     
+  admin-kubeconfig   done     
+  api-proxy          done     
+  kubeconfig         done     
+  worker-node        done     
+  join               done     
+  kube-proxy         done     
+  calico             done     
+  images             done     
+  nvml-mock          done     
+  hami               done     
+  admission-policy   done     
+  monitoring         done     
+steps:  14/14 done
+gpu:    a100×1, expected nvidia.com/gpu=10
+alloc:  vgpu 3/10, memory 30000/40960 MiB, cores 90/100%
+alerts: none firing
+(2.6s)

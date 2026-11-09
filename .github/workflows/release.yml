@@ -1,0 +1,97 @@
+# 发布到 GHCR：
+# - 打 v* tag 时发布 gputenant 镜像（CLI 和 API）。
+# - hami、nvml-mock 按 scripts/lib.sh 里的固定 commit 从源码构建，tag 是 commit 前 12 位，
+#   已经存在就跳过。CI e2e 直接拉这两个镜像，不在 CI 里从源码构建。
+# commit 要和 scripts/lib.sh 一致（TestDockerfileMatchesLibSh 会检查）。
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  HAMI_COMMIT: 2b8f4e29c48bca376d4f6123d7c6ae7627aef579
+  K8S_TEST_INFRA_COMMIT: e7f2320c95bef01ddde12fb8c493019a558e8f43
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  deps:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - image: hami
+            repo: Project-HAMi/HAMi
+            commit_var: HAMI_COMMIT
+            dockerfile: docker/Dockerfile
+          - image: nvml-mock
+            repo: NVIDIA/k8s-test-infra
+            commit_var: K8S_TEST_INFRA_COMMIT
+            dockerfile: deployments/nvml-mock/Dockerfile
+    steps:
+      - name: resolve tag
+        id: tag
+        run: |
+          commit="${{ env[matrix.commit_var] }}"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "ref=$REGISTRY/${{ matrix.image }}:${commit:0:12}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: already published?
+        id: exists
+        run: |
+          if docker manifest inspect "${{ steps.tag.outputs.ref }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "${{ steps.tag.outputs.ref }} exists, skipping"
+          fi
+      - if: steps.exists.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ steps.tag.outputs.commit }}
+          submodules: recursive
+          path: src
+      - if: steps.exists.outputs.skip != 'true'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.exists.outputs.skip != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: src/${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.tag.outputs.ref }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.tag.outputs.commit }}
+            org.opencontainers.image.description=${{ matrix.image }} built from ${{ matrix.repo }}@${{ steps.tag.outputs.commit }} for gputenant
+
+  gputenant:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: VERSION=${{ github.ref_name }}
+          tags: |
+            ${{ env.REGISTRY }}/gputenant:${{ github.ref_name }}
+            ${{ env.REGISTRY }}/gputenant:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.ref_name }}

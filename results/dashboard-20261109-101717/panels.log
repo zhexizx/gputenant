@@ -1,0 +1,51 @@
+# 2026-11-09T10:18:11+11:00 tenant-b 上 2 个 Pod（各 4000 MiB、20% 算力）运行后，逐个查询看板面板用的表达式
+# Prometheus 抓取目标
+http://172.18.0.1:18080/metrics up 
+[租户就绪] sum(gputenant_tenant_ready)
+    -> 1 series: =2
+[租户就绪] count(gputenant_tenant_ready)
+    -> 1 series: =2
+[降级的租户] sum(gputenant_tenant_degraded) or vector(0)
+    -> 1 series: =0
+[firing 的告警] sum(gputenant_alerts_firing) or vector(0)
+    -> 1 series: =0
+[运行中的任务] gputenant_tasks_running
+    -> 1 series: =0
+[状态数据延迟] time() - gputenant_refresh_timestamp_seconds
+    -> 1 series: =29.5
+[vGPU 分配率] gputenant_gpu_vgpu_allocated / gputenant_gpu_vgpu_capacity
+    -> 2 series: tenant-a=0.3, tenant-b=0.1
+[显存分配率] gputenant_gpu_memory_allocated_mib / gputenant_gpu_memory_capacity_mib
+    -> 2 series: tenant-a=0.732, tenant-b=0.244
+[算力分配率] gputenant_gpu_cores_allocated / gputenant_gpu_cores_capacity
+    -> 2 series: tenant-a=0.9, tenant-b=0.2
+[显存分配率（随时间）] gputenant_gpu_memory_allocated_mib / gputenant_gpu_memory_capacity_mib
+    -> 2 series: tenant-a=0.732, tenant-b=0.244
+[开通进度（完成的步骤）] gputenant_tenant_steps_done
+    -> 2 series: tenant-a=14, tenant-b=14
+[开通进度（完成的步骤）] max(gputenant_tenant_steps_total)
+    -> 1 series: =14
+[租户状态] gputenant_tenant_ready
+    -> 2 series: tenant-a=1, tenant-b=1
+[租户状态] gputenant_tenant_degraded
+    -> 2 series: tenant-a=0, tenant-b=0
+[租户状态] gputenant_tenant_steps_done
+    -> 2 series: tenant-a=14, tenant-b=14
+[租户状态] gputenant_gpu_vgpu_allocated
+    -> 2 series: tenant-a=3, tenant-b=2
+[租户状态] gputenant_gpu_vgpu_capacity
+    -> 2 series: tenant-a=10, tenant-b=20
+[租户状态] gputenant_alerts_firing
+    -> 2 series: tenant-a=0, tenant-b=0
+[租户状态] gputenant_tenant_inspect_errors
+    -> 2 series: tenant-a=0, tenant-b=0
+[firing 的告警] gputenant_alert_firing == 1
+    -> 0 series: (empty)
+[任务平均耗时（本 API 实例启动以来）] sum by (op, result) (gputenant_task_duration_seconds_sum) / sum by (op, result) (gputenant_task_duration_seconds_count)
+    -> 0 series: (empty)
+[任务结果（本 API 实例启动以来）] sum by (op, result) (gputenant_tasks_total)
+    -> 0 series: (empty)
+
+# Grafana 加载的看板
+gputenant 多租户 GPU: 15 panels, provisioned=true
+{"details":{"application":"Prometheus","features":{"rulerApiEnabled":false}},"message":"Successfully queried the Prometheus API.","status":"OK"}
