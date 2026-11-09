@@ -1,6 +1,6 @@
 # gputenant 工作总结（2026-11-09）
 
-第 3 块（Gin API、GHCR 发布、CI e2e、Grafana 看板）代码写完，能在本地验证的都验证了，分支 `feat/api-ghcr-dashboard`。GHCR 发布和 CI e2e 要合并后在 GitHub 上触发，**还没跑过**。
+第 3 块（Gin API、GHCR 发布、CI e2e、Grafana 看板）完成：PR #9 合并，tag `v0.1.0` 触发的 release 和之后的 CI e2e 在 GitHub 上都通过。
 
 ## 完成标准对照
 
@@ -10,8 +10,8 @@
 | 同一租户只能有一个任务 | ✅ 开通中再 POST、DELETE 都返回 409，并指向正在跑的任务 | `02-create-and-kill.log` |
 | 删除后不留旧指标 | ✅ DELETE 后 `GET` 返回 404，容器已删除，`/metrics` 里没有 tenant-c 了 | `05-delete.log` |
 | `gputenant` 镜像能用 | ✅ 本地构建的镜像（235MB，docker CLI 28.5.1、helm v3.19.0、HAMi chart）以当前用户运行 `serve`，从零开通 tenant-d 3 分 35 秒，宿主机 CLI 能读同一个租户，删除干净；写出的文件属主是 1000:1000 | `results/image-20261109-100723/` |
-| GHCR 发布 | ⬜ `release.yml` 写好、actionlint 通过，要合并后手动触发或打 tag 才会跑 | |
-| CI e2e 跑通 | ⬜ `e2e.yml` 写好、actionlint 通过。本地按同样的流程模拟（只建 tenant-a，TC-00~07、09）全部 PASS。要等 GHCR 上有 hami、nvml-mock 镜像 | `results/e2e-20261109-101301/`、`results/20261109-101406/` |
+| GHCR 发布 | ✅ tag `v0.1.0` 触发 release：hami 4 分 21 秒、nvml-mock 3 分 28 秒、gputenant 1 分 42 秒，3 个 job 都成功，没有跳过构建步骤 | release run 42546815733 |
+| CI e2e 跑通 | ✅ GitHub Actions 上通过，01:48–01:57 UTC，约 9 分钟，所有步骤 success。合并时 push 触发的第 1 次运行在镜像发布前，拉 hami 镜像报 `manifest unknown`，属预期；重新运行后通过。本地模拟结果见右侧 | e2e run 42545273247；`results/e2e-20261109-101301/`、`results/20261109-101406/` |
 | 看板可以演示 | ✅ 15 个面板的查询逐个在 Prometheus 上验证有数据，分配率和手算一致（tenant-b：显存 8000/32768=0.244）；hami-scheduler 缩到 0 后约 100 秒，降级租户、firing 告警表都显示 tenant-b / HamiWebhookDown。**面板在浏览器里的样子还没人看过** | `results/dashboard-20261109-101717/` |
 
 ## 实现
@@ -59,8 +59,9 @@
 - 为什么 CI 不从源码构建 HAMi，而是拉 GHCR 上按 commit 打 tag 的镜像？
 - Docker Desktop 的“宿主机网络”到底是谁的网络？
 
-## 合并后要做的
+## 合并后
 
-1. GitHub → Actions → release → Run workflow（手动触发）：发布 hami、nvml-mock 镜像。或者打 tag `v0.1.0`，同时发布 `gputenant` 镜像。
-2. 镜像出来后，Actions → e2e → Run workflow，确认 CI e2e 跑通。失败的话下载 `e2e-results` artifact。
-3. GHCR 的包默认是私有的。CI 用 `GITHUB_TOKEN` 拉同一个仓库发布的包应该没问题；想让别人能拉，要在包设置里改成公开。
+1. ✅ 打 tag `v0.1.0`，release 发布了三个镜像。
+2. ✅ CI e2e 重新运行后通过。CI 的 TC 明细在那次运行的 `e2e-results` artifact 里（需要登录 GitHub 下载），没有存进仓库。
+3. 还没做：GHCR 的包默认私有，想让别人能 `docker pull`，要在包设置里改成 Public。
+4. 已知问题：合并到 `main` 时 e2e 会和 release 同时或更早触发；只要 hami、nvml-mock 的固定 commit 不变，镜像已经在 GHCR 上，以后不会再出现。改 commit 时要先跑 release 再跑 e2e。
