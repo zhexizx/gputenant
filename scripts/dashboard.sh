@@ -11,6 +11,9 @@ case "${1:-}" in
     export GPUTENANT_IMAGE="${2:-gputenant:dev}" UID GID DOCKER_GID
     GID=$(id -g); DOCKER_GID=$(stat -c %g /var/run/docker.sock)
     compose up -d
+    # 配置和看板是 bind mount：切换 git 分支时目录可能被删掉再重建，旧容器还挂着已删除的目录，
+    # Grafana 会报 Failed to load home dashboard。这两个容器没有要保留的状态，每次都重建。
+    compose up -d --force-recreate prometheus grafana
     for _ in $(seq 60); do curl -sf http://127.0.0.1:18081/healthz >/dev/null && break; sleep 1; done
     curl -sf http://127.0.0.1:18081/healthz >/dev/null || die "API 没有起来：docker logs gputenant-api-1"
     echo "API        http://127.0.0.1:18081"

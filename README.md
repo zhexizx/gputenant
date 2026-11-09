@@ -20,8 +20,8 @@
 | `gputenant status`、`verify` | ✅ `status` 约 3 秒返回，有告警 firing 时判为 degraded；`verify` 在 hami-scheduler 停掉时报失败，恢复后通过 | `results/cli-status-verify-20261108-204408/` |
 | 本地 e2e、PR CI | ✅ `scripts/e2e.sh` 通过；PR CI（gofmt、vet、单元测试、构建、shellcheck）在 GitHub 上通过 | `results/e2e-20261108-210436/`、PR #8 |
 | REST API（`gputenant serve`）和 `/metrics` | ✅ 202/409/404；API 被 `kill -9` 后重启，旧任务 404，半成品租户报 not ready，指标 `tenant_ready=0`；再次提交从断点续做 | `results/api-20261109-095837/` |
-| `gputenant` 镜像 | ✅ 本地构建的镜像从零开通、删除租户都通过，文件属主是当前用户；**还没发布到 GHCR**（release workflow 要合并后触发） | `results/image-20261109-100723/`、`Dockerfile`、`.github/workflows/release.yml` |
-| CI e2e | ⬜ workflow 已写好；本地模拟同样的流程（只建 tenant-a，TC-00~07、09）通过。要等 GHCR 上有 hami、nvml-mock 镜像后才能在 GitHub 上跑 | `results/e2e-20261109-101301/`、`results/20261109-101406/`、`.github/workflows/e2e.yml` |
+| `gputenant` 镜像和 GHCR 发布 | ✅ 本地构建的镜像从零开通、删除租户都通过，文件属主是当前用户；打 tag `v0.1.0` 后 release workflow 发布了 `gputenant:v0.1.0`，以及按固定 commit 构建的 `hami`、`nvml-mock` | `results/image-20261109-100723/`、release run 42546815733 |
+| CI e2e | ✅ GitHub Actions 上通过（约 9 分钟）：从 GHCR 拉镜像、建管理集群、开通 tenant-a、verify、TC-00~07 和 TC-09 | e2e run 42545273247（第 2 次运行；第 1 次在镜像发布前触发，拉镜像失败） |
 | Grafana 看板 | ✅ 15 个面板的查询逐个在真实数据上验证过，包括故障时的降级和告警；面板外观还要人工在浏览器里看 | `results/dashboard-20261109-101717/`、`deploy/` |
 | 真实 GPU 验证 | ⬜ 有条件执行，见下文 | |
 
