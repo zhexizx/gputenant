@@ -1,0 +1,45 @@
+[14:03:35] tenants-namespace  skipped
+[14:03:35] control-plane      applying
+[14:03:51]   ok: tenant-c control plane Ready
+[14:03:51] control-plane      applied
+[14:03:51] admin-kubeconfig   applying
+[14:03:51] admin-kubeconfig   applied
+[14:03:51] api-proxy          applying
+[14:03:51]   proxy tenant-c-api-proxy: 127.0.0.1:16445 -> 172.18.255.202:6443
+[14:03:52] api-proxy          applied
+[14:03:52] kubeconfig         applying
+[14:03:52]   ok: tenant-c apiserver reachable via proxy
+[14:03:52] kubeconfig         applied
+[14:03:52] worker-node        applying
+[14:04:03]   ok: tenant-c-worker systemd running
+[14:04:03] worker-node        applied
+[14:04:03] join               applying
+[14:04:04]   node swap=4194304kB, kubelet failSwapOn=false
+[14:04:06]   ok: tenant-c-worker registered
+[14:04:06] join               applied
+[14:04:07] kube-proxy         applying
+[14:04:12]   ok: kube-proxy rules written
+[14:04:12] kube-proxy         applied
+[14:04:12] calico             applying
+[14:05:03]   ok: node Ready and Calico running
+[14:05:03] calico             applied
+[14:05:03] images             applying
+[14:05:32] images             applied
+[14:05:33] nvml-mock          applying
+[14:05:37] nvml-mock          applied
+[14:05:37] hami               applying
+[14:06:00]   ok: tenant-c-worker nvidia.com/gpu=20
+[14:06:00]   ok: device-plugin container ready
+[14:06:05]   ok: hami-scheduler rolled out
+[14:06:05]   ok: device-plugin migStrategy is none
+[14:06:05] hami               applied
+[14:06:05] admission-policy   applying
+[14:06:06]   ok: admission policy denies GPU Pods that skip the webhook
+[14:06:06] admission-policy   applied
+[14:06:06] monitoring         applying
+[14:06:58]   ok: alert rules loaded: KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+[14:07:08]   ok: tunnel probe, hami-scheduler and agent signals healthy
+[14:07:09]   ok: no state alert firing
+[14:07:09] monitoring         applied
+tenant tenant-c ready in 3m34s
+kubeconfig: /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-c/kubeconfig

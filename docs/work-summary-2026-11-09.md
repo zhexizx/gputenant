@@ -65,3 +65,19 @@
 2. ✅ CI e2e 重新运行后通过。CI 的 TC 明细在那次运行的 `e2e-results` artifact 里（需要登录 GitHub 下载），没有存进仓库。
 3. 还没做：GHCR 的包默认私有，想让别人能 `docker pull`，要在包设置里改成 Public。
 4. 已知问题：合并到 `main` 时 e2e 会和 release 同时或更早触发；只要 hami、nvml-mock 的固定 commit 不变，镜像已经在 GHCR 上，以后不会再出现。改 commit 时要先跑 release 再跑 e2e。
+
+## 简历数字 `X`
+
+按 README 的定义测：管理集群已就绪、镜像已构建，3 次从零 `time gputenant create`（tenant-c，t4×2），每轮结束 `status` 14/14 再删除。
+
+| 轮次 | 耗时 |
+|---|---|
+| 1 | 214.5 秒 |
+| 2 | 221.7 秒 |
+| 3 | 214.3 秒 |
+| **中位数 X** | **214.5 秒（约 3 分 34 秒）** |
+
+- 证据：`results/measure-x-20261109-140325/`（`env.txt` 记了代码版本 `81229f9`、Docker 资源和同时运行的容器），脚本 `scripts/measure-create.sh` 可以重测。
+- 唯一跳过的步骤是 `tenants-namespace`：这个命名空间所有租户共用，tenant-a、tenant-b 在时已经存在。其他 13 步每轮都真正执行了。
+- 各步耗时（3 轮大致相同）：monitoring 约 60 秒、calico 约 55 秒、images 约 30 秒、hami 28 秒、control-plane 15 秒，其余都在 10 秒以内。要缩短开通时间，先看前两步。
+- 简历写法：“开通一个租户约 3.5 分钟（单机 kind，GPU 为模拟）”。`N` 写 14。

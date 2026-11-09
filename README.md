@@ -27,7 +27,6 @@
 
 **还没收尾的：**
 
-- 简历数字 `X`（3 次 `time gputenant create` 的中位数）还没测。
 - `experiments/lib.sh` 的 `guard` 改成了排除自己的祖先进程（`docs/troubleshooting.md` 第 9 条）。这个改动只用模拟场景测过，还没在真实实验里跑过。
 
 ## 运行
@@ -114,8 +113,11 @@ curl localhost:8080/metrics
 
 **简历数字**
 
-- `N`：开通流程的 Step 数量（大约 13 个），不数单条命令。
-- `X`：管理集群已就绪、镜像已构建时，3 次 `time gputenant create` 的中位数，记录在 `results/`。
+- `N`：开通流程的 Step 数量，不数单条命令。**实际是 14 个**（`internal/tenant/plan.go`）。
+- `X`：管理集群已就绪、镜像已构建时，3 次 `time gputenant create` 的中位数，记录在 `results/`。**实测 214.5 秒（约 3 分 34 秒）**：3 轮分别是 214.3、214.5、221.7 秒，都是从零开通 t4×2 的 tenant-c，结束后 `status` 14/14（`results/measure-x-20261109-140325/`，`scripts/measure-create.sh`）。
+  - 测量条件：WSL2 + Docker Desktop（24 CPU、16 GB），同时运行着两个租户和另一个 kind 集群；Calico manifest 已有本地缓存，Prometheus chart 每次从网上下载。唯一跳过的步骤是共享的 `tenants` 命名空间（已存在）。
+  - 最耗时的三步：monitoring（Prometheus，约 60 秒）、calico（约 55 秒）、images（导入本地镜像，约 30 秒）。
+  - 写简历时写“约 3.5 分钟”，并注明 GPU 是模拟的、单机 kind 环境。
 
 ## 真实 GPU 验证（有条件执行）
 
