@@ -89,3 +89,14 @@
 - **`guard` 改动在真实实验里验证通过：**用 `bash -c './scripts/04-verify-env.sh tenant-a; ./experiments/run.sh'` 复现 troubleshooting 第 9 条的场景，前置检查没有误报；基线、方案 A、方案 B、webhook 故障四步都返回 0，探针结果和前两轮一致（`results/day4-5-20261109-162805/`）。
 - 告警这一步两次因为 GitHub 对 Prometheus chart 返回 504 中止，第三次（`results/day4-5-20261109-165724/`）两条检查都通过：`ApiserverToNodePathDown` 阻断后 105 秒、`KonnectivityAgentDisconnected` 138 秒 firing，`KonnectivityAgentUnavailable` 339 秒内没有触发，和前两轮一致。结束时恢复 Prometheus 又遇到 504，用 `experiments/restore.sh` 重试后恢复，两个租户 `status` 14/14（troubleshooting 第 14 条）。
 - 真实 GPU 验证没有做，README 的“局限”写明了。
+
+## README 收尾：LICENSE、徽章、看板截图
+
+- 加了 Apache-2.0 `LICENSE`（和 Kamaji、HAMi 一致），README 开头加了 ci、e2e 和许可证徽章。
+- 看板截图 `docs/images/dashboard.png`：两个租户各放了几个演示 GPU Pod，通过 API 对两个已开通的租户各提交一次 create（步骤全部跳过，几秒成功），让任务面板也有数据。截完已删除演示 Pod、停掉看板。
+- **截图时发现的问题：**
+  - “租户状态”表没有按租户合并，每个指标各占一行：Grafana 的 `merge` 把 `__name__` 也当成合并键。查询改成 `max by (tenant) (...)` 后每个租户一行。
+  - “开通进度”里租户的线和“总步骤”都是 14，被盖住了。“总步骤”改成虚线、先画。
+  - tenant-b 新 Pod 起不来：Calico 的 CNI token 过期。机器睡了约 14.6 小时，Calico 按单调时钟计时的刷新没赶上按墙上时间的过期。重启 calico-node 后恢复（troubleshooting 第 15 条，`results/calico-token-20261109-173550/`）。
+  - tenant-a 的 `default` 里有 10:14 那轮测试留下的 Pod，占了 90% 算力。这是设计如此：`tests/run-all.sh` 在下一轮开始时才清理。
+- GitHub 上 PR #12 合并后触发的 e2e（run 42572475460）在“management cluster”这一步失败。日志要登录才能看，失败时间（06:20 UTC）在 GitHub 间歇 504 期间，原因没有确认。

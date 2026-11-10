@@ -1,11 +1,19 @@
 # gputenant
 
+[![ci](https://github.com/zhexizx/gputenant/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhexizx/gputenant/actions/workflows/ci.yml)
+[![e2e](https://github.com/zhexizx/gputenant/actions/workflows/e2e.yml/badge.svg?branch=main)](https://github.com/zhexizx/gputenant/actions/workflows/e2e.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 基于 Kamaji 托管控制面和 HAMi GPU 虚拟化的多租户 GPU Kubernetes 平台，跑在单机 kind 上。**GPU 由 nvml-mock 模拟**，没有在真实 GPU 上验证过（见[局限](#局限)）。
 
 - 每个租户有独立的 Kamaji 控制面和独立的工作节点（`kindest/node` 容器）。
 - HAMi 按显存和算力切分 GPU：同一租户内的多个 Pod 可以共享一张卡，不能跨租户共享。
 - `gputenant` 用 14 个可重跑的步骤开通一个租户，提供 CLI、REST API、`/metrics` 和 Grafana 看板。
 - 核心实验：Konnectivity 隧道断开或 HAMi webhook 挂掉时，GPU Pod 会被静默放行、绕过 HAMi 核算。现在每个租户默认部署 ValidatingAdmissionPolicy，把这种情况改为明确拒绝，并用 Prometheus 告警发现故障。
+
+![Grafana 看板](docs/images/dashboard.png)
+
+*Grafana 看板（`scripts/dashboard.sh up`）：两个租户都就绪，没有告警；条形图是 HAMi 的分配率，图里的 GPU Pod 是演示用的。*
 
 ## 主要结果
 
@@ -117,7 +125,7 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 | REST API | API 被 `kill -9` 后重启：旧任务 404，半成品租户报 not ready，`gputenant_tenant_ready=0`；再次提交从断点续做 | `results/api-20261109-095837/` |
 | 镜像和 GHCR | 本地构建的镜像能从零开通、删除租户；`v0.1.0` 的 release workflow 通过 | `results/image-20261109-100723/`、release run 42546815733 |
 | CI e2e | GitHub Actions 上通过 | e2e run 42545273247 |
-| Grafana 看板 | 15 个面板的查询逐个在真实数据上验证过，包括故障时的降级和告警；在浏览器里看过 | `results/dashboard-20261109-101717/` |
+| Grafana 看板 | 15 个面板的查询逐个在真实数据上验证过，包括故障时的降级和告警；在浏览器里看过。11/09 截图时发现“租户状态”表没有按租户合并（每个指标各占一行），已修复 | `results/dashboard-20261109-101717/` |
 | 开通耗时 | 见[主要结果](#主要结果) | `results/measure-x-20261109-140325/` |
 
 ## 设计
@@ -150,11 +158,12 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 - 同一张卡只能被同一租户内的 Pod 共享，不能跨租户共享。
 - 把 `kindest/node` 容器接入为工作节点只是实验做法，不是生产方案。
 - API 没有鉴权，只适合本机使用。
+- 本地机器睡眠超过约 12 小时后，Calico 的 CNI token 可能过期，新 Pod 起不来，`status` 发现不了（`verify` 会建 Pod，应该能发现，没有实测）；重启 calico-node 即可（`docs/troubleshooting.md` 第 15 条）。
 - Prometheus chart 每次开通都从 GitHub 下载，GitHub 出错时 `monitoring` 这一步会失败，只能重跑（`docs/troubleshooting.md` 第 14 条）。
 - 没测的故障：隧道“黑洞”（server 以为 agent 在线，但数据不通，webhook 可能等满 10 秒超时）；方案 A 对 UPDATE 操作的影响。方案 A 已经不采用。
 
 ## 文档
 
 - `docs/failure-report.md`：降级实验报告（隧道断开、webhook 故障、方案 A/B、告警）。
-- `docs/troubleshooting.md`：搭建和实验中遇到的 14 个问题、根因和预防措施。
+- `docs/troubleshooting.md`：搭建和实验中遇到的 15 个问题、根因和预防措施。
 - `docs/work-summary-*.md`：按日期的工作记录。

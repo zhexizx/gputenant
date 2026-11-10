@@ -1,0 +1,14 @@
+// 记录用：编译后在 Docker 虚拟机里运行，对比 CLOCK_MONOTONIC 和 CLOCK_BOOTTIME。存成 .txt，免得被 go ./... 当成包。
+package main
+
+import (
+	"fmt"
+	"golang.org/x/sys/unix"
+)
+
+func main() {
+	var m, b unix.Timespec
+	unix.ClockGettime(unix.CLOCK_MONOTONIC, &m)
+	unix.ClockGettime(unix.CLOCK_BOOTTIME, &b)
+	fmt.Printf("monotonic=%ds boottime=%ds suspended=%ds (%.1fh)\n", m.Sec, b.Sec, b.Sec-m.Sec, float64(b.Sec-m.Sec)/3600)
+}

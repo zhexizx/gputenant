@@ -532,15 +532,6 @@
       },
       "targets": [
         {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_tenant_steps_done",
-          "legendFormat": "{{tenant}}"
-        },
-        {
           "refId": "B",
           "datasource": {
             "type": "prometheus",
@@ -548,6 +539,15 @@
           },
           "expr": "max(gputenant_tenant_steps_total)",
           "legendFormat": "总步骤"
+        },
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "gputenant_tenant_steps_done",
+          "legendFormat": "{{tenant}}"
         }
       ],
       "fieldConfig": {
@@ -560,7 +560,37 @@
             "lineInterpolation": "stepAfter"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "总步骤"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -584,7 +614,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_tenant_ready",
+          "expr": "max by (tenant) (gputenant_tenant_ready)",
           "legendFormat": "ready",
           "instant": true,
           "format": "table"
@@ -595,7 +625,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_tenant_degraded",
+          "expr": "max by (tenant) (gputenant_tenant_degraded)",
           "legendFormat": "degraded",
           "instant": true,
           "format": "table"
@@ -606,7 +636,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_tenant_steps_done",
+          "expr": "max by (tenant) (gputenant_tenant_steps_done)",
           "legendFormat": "steps",
           "instant": true,
           "format": "table"
@@ -617,7 +647,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_gpu_vgpu_allocated",
+          "expr": "max by (tenant) (gputenant_gpu_vgpu_allocated)",
           "legendFormat": "vgpu_alloc",
           "instant": true,
           "format": "table"
@@ -628,7 +658,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_gpu_vgpu_capacity",
+          "expr": "max by (tenant) (gputenant_gpu_vgpu_capacity)",
           "legendFormat": "vgpu_cap",
           "instant": true,
           "format": "table"
@@ -639,7 +669,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_alerts_firing",
+          "expr": "max by (tenant) (gputenant_alerts_firing)",
           "legendFormat": "alerts",
           "instant": true,
           "format": "table"
@@ -650,7 +680,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_tenant_inspect_errors",
+          "expr": "max by (tenant) (gputenant_tenant_inspect_errors)",
           "legendFormat": "read_errors",
           "instant": true,
           "format": "table"
