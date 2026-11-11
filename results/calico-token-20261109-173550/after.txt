@@ -1,0 +1,5 @@
+# after restart 2026-11-09T17:37:55+11:00
+2026-11-09 06:37:26.589542640 +0000
+demo-infer-1      1/1     Running   0          4m22s
+demo-infer-2      1/1     Running   0          4m22s
+demo-train        1/1     Running   0          4m23s

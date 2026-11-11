@@ -1,0 +1,29 @@
+# 2026-11-11T16:55:29+11:00 新看板的查询在真实 Prometheus 上的结果。tenant-a 放了 2 个演示 Pod（20000+16000 MiB），tenant-b 1 个（6000 MiB）
+Grafana 加载的看板: gputenant 多租户 GPU，顶层 6 个（含折叠行），version 1
+[租户就绪 A]
+    {"ready":"2","total":"2"} = 0
+[降级租户 A]
+    {} = 0
+[告警 A]
+    {} = 0
+[租户 A]
+    {"status":"就绪","tenant":"tenant-a"} = 1
+    {"status":"就绪","tenant":"tenant-b"} = 1
+[租户 B]
+    {"tenant":"tenant-a"} = 0.87890625
+    {"tenant":"tenant-b"} = 0.18310546875
+[租户 C]
+    {"tenant":"tenant-a"} = 0.7
+    {"tenant":"tenant-b"} = 0.15
+[租户 D]
+    {"tenant":"tenant-a"} = 0
+    {"tenant":"tenant-b"} = 0
+[显存分配率 A]
+    {"tenant":"tenant-a"} = 0.87890625
+    {"tenant":"tenant-b"} = 0.18310546875
+[firing 的告警 A]
+    (empty)
+[任务平均耗时（本 API 实例启动以来） A]
+    (empty)
+[任务结果（本 API 实例启动以来） A]
+    (empty)

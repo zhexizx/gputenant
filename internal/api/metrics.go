@@ -41,6 +41,11 @@ var (
 	descMemAlloc  = prometheus.NewDesc("gputenant_gpu_memory_allocated_mib", "GPU memory allocated by HAMi to live Pods, MiB.", labelsTenant, nil)
 	descCoresCap  = prometheus.NewDesc("gputenant_gpu_cores_capacity", "GPU compute registered by HAMi, percent (100 per card).", labelsTenant, nil)
 	descCoresAll  = prometheus.NewDesc("gputenant_gpu_cores_allocated", "GPU compute allocated by HAMi to live Pods, percent.", labelsTenant, nil)
+	descCardMem   = prometheus.NewDesc("gputenant_gpu_card_memory_capacity_mib", "GPU memory of one physical card registered by HAMi, MiB.", []string{"tenant", "card"}, nil)
+	descCardAlloc = prometheus.NewDesc("gputenant_gpu_card_memory_allocated_mib", "GPU memory allocated by HAMi on one card to live Pods of one namespace, MiB.", []string{"tenant", "card", "namespace"}, nil)
+	descCardCores = prometheus.NewDesc("gputenant_gpu_card_cores_capacity", "GPU compute of one physical card registered by HAMi, percent (100).", []string{"tenant", "card"}, nil)
+	descCardCAll  = prometheus.NewDesc("gputenant_gpu_card_cores_allocated", "GPU compute allocated by HAMi on one card to live Pods of one namespace, percent.", []string{"tenant", "card", "namespace"}, nil)
+	descCardPods  = prometheus.NewDesc("gputenant_gpu_card_pods", "Live Pods of one namespace holding an allocation on one card.", []string{"tenant", "card", "namespace"}, nil)
 	descAlerts    = prometheus.NewDesc("gputenant_alerts_firing", "Alerts firing in the tenant's Prometheus.", labelsTenant, nil)
 	descAlert     = prometheus.NewDesc("gputenant_alert_firing", "1 for each alert firing in the tenant's Prometheus.", []string{"tenant", "alertname"}, nil)
 	descInspectOK = prometheus.NewDesc("gputenant_tenant_inspect_errors", "Parts of the tenant state that could not be read in the last refresh.", labelsTenant, nil)
@@ -130,7 +135,7 @@ func (m *Metrics) Refresh(ctx context.Context) {
 
 func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	for _, d := range []*prometheus.Desc{descReady, descDegraded, descStepsDone, descSteps, descVGPUCap, descVGPUAlloc,
-		descMemCap, descMemAlloc, descCoresCap, descCoresAll, descAlerts, descAlert, descInspectOK, descRefreshTS, descRefreshOK} {
+		descMemCap, descMemAlloc, descCoresCap, descCoresAll, descCardMem, descCardAlloc, descCardCores, descCardCAll, descCardPods, descAlerts, descAlert, descInspectOK, descRefreshTS, descRefreshOK} {
 		ch <- d
 	}
 }
@@ -158,6 +163,15 @@ func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 			gauge(descMemAlloc, float64(r.Usage.MemAllocMiB), name)
 			gauge(descCoresCap, float64(r.Usage.CoresCapacity), name)
 			gauge(descCoresAll, float64(r.Usage.CoresAllocated), name)
+			for _, c := range r.Usage.Cards {
+				gauge(descCardMem, float64(c.MemCapacityMiB), name, c.Card)
+				gauge(descCardCores, float64(c.CoresCapacity), name, c.Card)
+				for _, a := range c.Namespaces {
+					gauge(descCardAlloc, float64(a.MemMiB), name, c.Card, a.Namespace)
+					gauge(descCardCAll, float64(a.Cores), name, c.Card, a.Namespace)
+					gauge(descCardPods, float64(a.Pods), name, c.Card, a.Namespace)
+				}
+			}
 		}
 		// 读不到告警时不导出 alerts_firing，免得被当成 0（一切正常）。
 		if _, failed := r.Errors["alerts"]; r.Ready && !failed {

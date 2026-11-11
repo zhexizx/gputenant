@@ -110,6 +110,19 @@
 - **处理：** 等这个文件能下载后重跑 `alert.sh`，再用 `experiments/restore.sh` 恢复（重试第 3 次成功，实验规则已移除，两个租户 `status` 都是 14/14）。没有改代码。`gputenant create` 的 `monitoring` 步骤也会遇到同样的问题，重跑即可，已完成的步骤会跳过。如果以后经常出现，像 Kamaji 一样把 chart 存进仓库并校验 sha256。
 - **教训：** 恢复步骤也依赖网络时，恢复本身可能失败。脚本这次正确地报了“环境恢复失败”，没有假装恢复成功，所以要看最后一行再离开。
 
+## 15. 机器睡眠后 Calico 的 CNI token 过期，新 Pod 起不来
+
+- **现象：** 2026-11-09 给看板截图时，tenant-b 新建的 Pod 一直 `ContainerCreating`，事件是 `plugin type="calico" failed (add): error getting ClusterInformation: connection is unauthorized: Unauthorized`。已经在跑的 Pod 不受影响；`gputenant status tenant-b` 照样是 14/14、没有告警（`results/calico-token-20261109-173550/before.txt`）。
+- **定位：**
+  - 节点上 `/etc/cni/net.d/calico-kubeconfig` 的 token 签发于 11/08 06:22 UTC，有效期 24 小时，11/09 06:22 已经过期；calico-node 的日志里只有建节点时写过一次。tenant-a 在 11/09 03:10 正常刷新过。
+  - Calico v3.31.2 的刷新逻辑（`node/pkg/cni/token_watch.go`）：拿到 token 后睡（剩余有效期 ÷ 4）再加最多 100% 的随机抖动，也就是 6～12 小时后刷新。睡眠用的是 Go 的 `time.After`，按单调时钟计时。
+  - 两个节点上 calico-node 进程的运行时长（`ps -o etimes`，约 9.7 小时）比墙上时间（约 24.3 小时）少了约 14.6 小时。说明 Docker Desktop 的虚拟机被整体暂停过（Windows 睡眠），期间单调时钟不走；虚拟机里 `CLOCK_MONOTONIC` 和 `CLOCK_BOOTTIME` 相同，所以不是虚拟机自己挂起。
+- **根因：** token 按墙上时间过期，刷新计时器按单调时钟走。机器睡了 14.6 小时，tenant-b 抽到的睡眠时长超过了 9.6 小时，到 token 过期时还没醒。tenant-a 抽得短，赶在过期前刷新了。
+- **修复：** `kubectl -n kube-system rollout restart ds/calico-node`（tenant-b），calico-node 启动时立即重新申请 token，Pod 随即 Running（`after.txt`）。代码没有改。
+- **教训：**
+  - `status` 只检查各步骤的资源在不在，发现不了“新 Pod 起不来”。`gputenant verify` 会真的创建一个 GPU Pod，按道理能发现这类问题（这次已先修好，没有用 verify 实测），机器睡眠后先跑一次。
+  - 本地实验环境里，“按时间刷新”的组件都可能被睡眠拖过期，排查时先对比进程运行时长和墙上时间。
+
 ## 预防措施
 
 | 问题 | 检查 | 位置 |
@@ -125,4 +138,4 @@
 | 默认防护缺失 | 每个租户默认部署准入策略和告警；验证环境和 TC-09 都会检查 | `05-tenant-guardrails.sh`、`04-verify-env.sh`、`tests/tc-09.sh` |
 | 手工改动掩盖问题 | 一条命令删除、重建、跑全部测试 | `scripts/verify-from-scratch.sh` |
 
-Docker Desktop 重启或升级后，先运行 `scripts/00-preflight.sh` 和 `scripts/04-verify-env.sh`。
+Docker Desktop 重启、升级或机器睡眠后，先运行 `scripts/00-preflight.sh`，再对每个租户运行 `gputenant verify`（第 15 条）。

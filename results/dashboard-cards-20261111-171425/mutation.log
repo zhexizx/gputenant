@@ -1,0 +1,8 @@
+# 变异：按卡统计时不区分命名空间（k := key{i, ""}），TestUsageFromPerCard 必须失败
+--- FAIL: TestUsageFromPerCard (0.00s)
+    status_test.go:276: cards:
+         got [{Card:T4 #0 UUID:GPU-0 MemCapacityMiB:16384 Namespaces:[{Namespace:team-b MemMiB:13000 Cores:70 Pods:3}]} {Card:T4 #1 UUID:GPU-1 MemCapacityMiB:16384 Namespaces:[{Namespace:team-b MemMiB:3000 Cores:10 Pods:1}]}]
+        want [{Card:T4 #0 UUID:GPU-0 MemCapacityMiB:16384 Namespaces:[{Namespace:team-a MemMiB:9000 Cores:50 Pods:2} {Namespace:team-b MemMiB:4000 Cores:20 Pods:1}]} {Card:T4 #1 UUID:GPU-1 MemCapacityMiB:16384 Namespaces:[{Namespace:team-b MemMiB:3000 Cores:10 Pods:1}]}]
+FAIL
+FAIL	github.com/zhexizx/gputenant/internal/tenant	0.008s
+FAIL

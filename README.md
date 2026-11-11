@@ -1,11 +1,19 @@
 # gputenant
 
+[![ci](https://github.com/zhexizx/gputenant/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhexizx/gputenant/actions/workflows/ci.yml)
+[![e2e](https://github.com/zhexizx/gputenant/actions/workflows/e2e.yml/badge.svg?branch=main)](https://github.com/zhexizx/gputenant/actions/workflows/e2e.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 基于 Kamaji 托管控制面和 HAMi GPU 虚拟化的多租户 GPU Kubernetes 平台，跑在单机 kind 上。**GPU 由 nvml-mock 模拟**，没有在真实 GPU 上验证过（见[局限](#局限)）。
 
 - 每个租户有独立的 Kamaji 控制面和独立的工作节点（`kindest/node` 容器）。
 - HAMi 按显存和算力切分 GPU：同一租户内的多个 Pod 可以共享一张卡，不能跨租户共享。
 - `gputenant` 用 14 个可重跑的步骤开通一个租户，提供 CLI、REST API、`/metrics` 和 Grafana 看板。
 - 核心实验：Konnectivity 隧道断开或 HAMi webhook 挂掉时，GPU Pod 会被静默放行、绕过 HAMi 核算。现在每个租户默认部署 ValidatingAdmissionPolicy，把这种情况改为明确拒绝，并用 Prometheus 告警发现故障。
+
+![Grafana 看板](docs/images/dashboard.png)
+
+*Grafana 看板（`scripts/dashboard.sh up`，演示数据来自 `scripts/demo-teams.sh up`）。“每张卡的显存/算力”里，tenant-a 的 A100 #0 上有 demo-team-a、demo-team-b 两段：两个用户在共享同一张卡；tenant-b 的 T4 #1 只有一个用户，T4 #0 空着。深灰是空闲。*
 
 ## 主要结果
 
@@ -49,6 +57,7 @@
 ./experiments/restore.sh         # 实验被强行中断后恢复
 ./scripts/verify-from-scratch.sh # 删除、从零重建、跑全部测试
 ./scripts/dashboard.sh up        # API + Prometheus + Grafana（先 docker build -t gputenant:dev .）
+./scripts/demo-teams.sh up       # 演示：tenant-a 两个带配额的用户共享一张卡，tenant-b 一个用户（down 删除）
 ./scripts/down.sh                # 只删除本项目的资源
 ```
 
@@ -117,7 +126,7 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 | REST API | API 被 `kill -9` 后重启：旧任务 404，半成品租户报 not ready，`gputenant_tenant_ready=0`；再次提交从断点续做 | `results/api-20261109-095837/` |
 | 镜像和 GHCR | 本地构建的镜像能从零开通、删除租户；`v0.1.0` 的 release workflow 通过 | `results/image-20261109-100723/`、release run 42546815733 |
 | CI e2e | GitHub Actions 上通过 | e2e run 42545273247 |
-| Grafana 看板 | 15 个面板的查询逐个在真实数据上验证过，包括故障时的降级和告警；在浏览器里看过 | `results/dashboard-20261109-101717/` |
+| Grafana 看板 | 11/11 重做：3 个 stat、租户表、每张卡的显存和算力（按用户）、显存分配率，加一个折叠的“运维”行。“每张卡”面板：Go 单元测试（含变异测试）、promqltest、真实 Prometheus 和截图都验证过（`results/dashboard-cards-20261111-171425/`）。查询用 promqltest 喂假数据验证了就绪、降级、未就绪 8/14、读取失败四种状态（含变异检查），又在真实 Prometheus 上逐个跑过；红色的渲染用临时调低阈值的副本看过。旧版 15 个面板的验证见 11/09 | `results/dashboard-promql-20261111-163159/`、`results/dashboard-redo-20261111-165529/`、`results/dashboard-20261109-101717/` |
 | 开通耗时 | 见[主要结果](#主要结果) | `results/measure-x-20261109-140325/` |
 
 ## 设计
@@ -140,9 +149,12 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 **API 和看板**
 
 - `POST`/`DELETE` 返回 `202` 和任务 ID，同一租户同时只能有一个任务。只运行一个实例，任务放在内存里；重启后旧任务消失，租户状态只看 `Check`，不会因为重启前“任务成功”就报成功。
-- `/metrics` 导出租户状态、开通耗时和结果、GPU 容量和已分配量（从 HAMi 注解计算）、各租户 firing 的告警。租户状态由后台每 30 秒刷新成快照；读不到告警时不导出告警数，免得被当成 0。
+- `/metrics` 导出租户状态、开通耗时和结果、GPU 容量和已分配量（从 HAMi 注解计算）、各租户 firing 的告警。GPU 显存和算力还按卡、按命名空间拆开（`gputenant_gpu_card_*`）：卡来自节点注解 `hami.io/node-nvidia-register`，每份分配从 Pod 注解 `hami.io/vgpu-devices-allocated` 里的 UUID 对到卡上，Pod 的命名空间就是用户。租户状态由后台每 30 秒刷新成快照；读不到告警时不导出告警数，免得被当成 0。
 - 告警不经 apiserver 代理查询：那要经过 Konnectivity 隧道，隧道断开时正好查不到。改为在节点内 curl 租户 Prometheus 的 ClusterIP。
 - 看板用的 Prometheus 和 Grafana 用 docker compose 跑，只抓取 API 的 `/metrics`（`deploy/`）。看板显示的是 **分配率**（HAMi 分出去了多少），不是利用率。
+- 看板只回答三个问题：平台有没有问题、每个租户分出去多少、出问题时是哪个租户哪条告警。颜色只表示异常（正常灰色，未就绪、降级、告警、读取失败、分配率 ≥ 85% 红色），每个租户在所有面板里用同一个颜色；任务耗时和结果放在默认折叠的“运维”行。
+- “每张卡的显存”“每张卡的算力”回答“谁和谁在共享哪张卡”：每张物理卡一根条，按命名空间分段，一根条里有几段颜色就有几个用户在共享，最后的深灰是空闲。用户颜色用 Grafana 的分类调色板（绿、黄、蓝……），第 5 个用户起会出现红色，和“红色只表示异常”冲突；Grafana 12.1.1 的覆盖规则不支持按列位置（`byIndex`）指定颜色，用了会让整个看板报错。
+- “2/2”“未就绪 8/14”这类文字由 PromQL 生成：`count_values` 把数字放进标签，`label_join` 拼起来，Grafana 只负责显示。状态写“未就绪”而不是“开通中”：节点挂掉时步骤数也会下降，指标区分不了这两种情况。
 
 ## 局限
 
@@ -150,11 +162,12 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 - 同一张卡只能被同一租户内的 Pod 共享，不能跨租户共享。
 - 把 `kindest/node` 容器接入为工作节点只是实验做法，不是生产方案。
 - API 没有鉴权，只适合本机使用。
+- 本地机器睡眠超过约 12 小时后，Calico 的 CNI token 可能过期，新 Pod 起不来，`status` 发现不了（`verify` 会建 Pod，应该能发现，没有实测）；重启 calico-node 即可（`docs/troubleshooting.md` 第 15 条）。
 - Prometheus chart 每次开通都从 GitHub 下载，GitHub 出错时 `monitoring` 这一步会失败，只能重跑（`docs/troubleshooting.md` 第 14 条）。
 - 没测的故障：隧道“黑洞”（server 以为 agent 在线，但数据不通，webhook 可能等满 10 秒超时）；方案 A 对 UPDATE 操作的影响。方案 A 已经不采用。
 
 ## 文档
 
 - `docs/failure-report.md`：降级实验报告（隧道断开、webhook 故障、方案 A/B、告警）。
-- `docs/troubleshooting.md`：搭建和实验中遇到的 14 个问题、根因和预防措施。
+- `docs/troubleshooting.md`：搭建和实验中遇到的 15 个问题、根因和预防措施。
 - `docs/work-summary-*.md`：按日期的工作记录。

@@ -1,0 +1,45 @@
+# 2026-11-09T17:35:50+11:00  UTC 2026-11-09T06:35:50+00:00
+## CNI kubeconfig mtime
+tenant-a: 2026-11-09 03:10:19.361200405 +0000
+tenant-b: 2026-11-08 06:22:24.538540833 +0000
+## token exp (JWT payload, no signature)
+tenant-a: {"iat":"2026-11-09T03:10:19Z","exp":"2026-11-10T03:10:19Z"}
+tenant-b: {"iat":"2026-11-08T06:22:24Z","exp":"2026-11-09T06:22:24Z"}
+## cni-config-monitor logs
+### tenant-a
+2026-11-08 06:17:46.077 [INFO][93] cni-config-monitor/token_watch.go 240: Update of CNI kubeconfig triggered based on elapsed time.
+2026-11-08 06:17:46.078 [INFO][93] cni-config-monitor/token_watch.go 295: Wrote updated CNI kubeconfig file. path="/host/etc/cni/net.d/calico-kubeconfig"
+2026-11-09 03:10:19.360 [INFO][93] cni-config-monitor/token_watch.go 240: Update of CNI kubeconfig triggered based on elapsed time.
+2026-11-09 03:10:19.363 [INFO][93] cni-config-monitor/token_watch.go 295: Wrote updated CNI kubeconfig file. path="/host/etc/cni/net.d/calico-kubeconfig"
+### tenant-b
+2026-11-08 06:22:24.543 [INFO][105] cni-config-monitor/token_watch.go 240: Update of CNI kubeconfig triggered based on elapsed time.
+2026-11-08 06:22:24.544 [INFO][105] cni-config-monitor/token_watch.go 295: Wrote updated CNI kubeconfig file. path="/host/etc/cni/net.d/calico-kubeconfig"
+## tenant-b demo-train events
+  Warning  FailedCreatePodSandBox  76s                kubelet         Failed to create pod sandbox: rpc error: code = Unknown desc = failed to setup network for sandbox "aa25ce44676ad8a34ec34498da625664796239ae0ad861fea6c36ffc47d7317d": plugin type="calico" failed (add): error getting ClusterInformation: connection is unauthorized: Unauthorized
+  Warning  FailedCreatePodSandBox  63s                kubelet         Failed to create pod sandbox: rpc error: code = Unknown desc = failed to setup network for sandbox "a53f5b4bb5b2262b5b129c2a321766ceac76f016f5cfbce5f0eb8070402b9594": plugin type="calico" failed (add): error getting ClusterInformation: connection is unauthorized: Unauthorized
+  Warning  FailedCreatePodSandBox  48s                kubelet         Failed to create pod sandbox: rpc error: code = Unknown desc = failed to setup network for sandbox "aa7985ede47822c7dcf39feaf50ff0e6934ae0463d9f014e674bcb9c74d3f99c": plugin type="calico" failed (add): error getting ClusterInformation: connection is unauthorized: Unauthorized
+  Warning  FailedCreatePodSandBox  13s (x3 over 36s)  kubelet         (combined from similar events): Failed to create pod sandbox: rpc error: code = Unknown desc = failed to setup network for sandbox "d731c4fd2d79f1c687b35319ad2f06967d6dd69f898d686f7b32e4d36b8d65d9": plugin type="calico" failed (add): error getting ClusterInformation: connection is unauthorized: Unauthorized
+## gputenant status tenant-b
+  tenants-namespace  done     
+  control-plane      done     
+  admin-kubeconfig   done     
+  api-proxy          done     
+  kubeconfig         done     
+  worker-node        done     
+  join               done     
+  kube-proxy         done     
+  calico             done     
+  images             done     
+  nvml-mock          done     
+  hami               done     
+  admission-policy   done     
+  monitoring         done     
+steps:  14/14 done
+gpu:    t4×2, expected nvidia.com/gpu=20
+alloc:  vgpu 3/20, memory 20000/32768 MiB, cores 120/200%
+alerts: none firing
+(2.6s)
+rc=0
+tenant-a calico-node etimes=35012s wall_since_start=87561s
+tenant-b calico-node etimes=34734s wall_since_start=87281s
+clock-check (Docker VM): monotonic=237683s boottime=237683s suspended=0s (0.0h)

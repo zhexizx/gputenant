@@ -1,0 +1,9 @@
+# 2026-11-11T16:31:59+11:00 看板查询离线验证：Prometheus promqltest v0.305.0（对应 Prometheus 3.5.0），表达式由 jq 从 gputenant.json 取出
+=== RUN   TestDashboard
+=== RUN   TestDashboard/line_25/(count(gputenant_tenant_ready)_-_sum(gputenant_tenant_ready))_*_on_()_group_left_(ready,_total)_(count_values("ready",_sum(gputenant_tenant_ready))_*_on_()_group_left_(total)_count_values("total",_count(gputenant_tenant_ready)))
+=== RUN   TestDashboard/line_28/max_by_(tenant,_status)_(label_replace(max_by_(tenant)_(gputenant_tenant_degraded)_==_1,_"status",_"降级",_"",_"")_or_on_(tenant)_label_replace(max_by_(tenant)_(gputenant_tenant_ready)_==_1,_"status",_"就绪",_"",_"")_or_on_(tenant)_label_replace(max_by_(tenant)_(gputenant_tenant_inspect_errors)_>_0,_"status",_"读取失败",_"",_"")_or_on_(tenant)_label_replace(label_join(count_values_by_(tenant)_("done",_max_by_(tenant)_(gputenant_tenant_steps_done))_*_on_(tenant)_group_left_(total)_count_values_by_(tenant)_("total",_max_by_(tenant)_(gputenant_tenant_steps_total)),_"status",_"/",_"done",_"total"),_"status",_"开通中_$1",_"status",_"(.*)"))
+=== RUN   TestDashboard/line_34/max_by_(tenant,_alertname)_(gputenant_alert_firing_==_1)
+=== RUN   TestDashboard/line_43/(count(gputenant_tenant_ready)_-_sum(gputenant_tenant_ready))_*_on_()_group_left_(ready,_total)_(count_values("ready",_sum(gputenant_tenant_ready))_*_on_()_group_left_(total)_count_values("total",_count(gputenant_tenant_ready)))
+--- PASS: TestDashboard (0.01s)
+PASS
+ok  	promq	0.023s
