@@ -1,0 +1,5 @@
+# 2026-11-11T17:43:09+11:00 go vet + go test -race（含 gputenant_gpu_card_cores_*）
+?   	github.com/zhexizx/gputenant/cmd/gputenant	[no test files]
+ok  	github.com/zhexizx/gputenant/internal/api	1.087s
+ok  	github.com/zhexizx/gputenant/internal/tenant	1.191s
+?   	github.com/zhexizx/gputenant/manifests	[no test files]

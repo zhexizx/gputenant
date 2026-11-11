@@ -480,6 +480,247 @@
       }
     },
     {
+      "id": 10,
+      "type": "barchart",
+      "title": "每张卡的显存",
+      "description": "每张物理卡一根条，按命名空间（用户）分段：一根条里有几段颜色，就有几个用户在共享这张卡的显存。最后的深灰是空闲。来自 HAMi 写在 Pod 上的分配注解，是分配量，不是用量。",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_join(sum by (tenant, card, namespace) (gputenant_gpu_card_memory_allocated_mib) or label_replace(max by (tenant, card) (gputenant_gpu_card_memory_capacity_mib) - (sum by (tenant, card) (gputenant_gpu_card_memory_allocated_mib) or max by (tenant, card) (gputenant_gpu_card_memory_capacity_mib) * 0), \"namespace\", \"空闲\", \"\", \"\"), \"gpu\", \"\\n\", \"tenant\", \"card\")",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "namespace",
+                "desc": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "namespace",
+            "rowField": "gpu",
+            "valueField": "Value",
+            "emptyValue": "null"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "gpu\\namespace": "卡"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "卡",
+                "desc": false
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mbytes",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 90,
+            "gradientMode": "none",
+            "lineWidth": 1,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "空闲"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#34373d"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xField": "卡",
+        "stacking": "normal",
+        "showValue": "never",
+        "groupWidth": 0.7,
+        "barWidth": 0.8,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "每张卡的算力",
+      "description": "同左，按算力（每张卡 100%）。HAMi 按 gpucores 分配，是分配量，不是利用率。",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_join(sum by (tenant, card, namespace) (gputenant_gpu_card_cores_allocated) or label_replace(max by (tenant, card) (gputenant_gpu_card_cores_capacity) - (sum by (tenant, card) (gputenant_gpu_card_cores_allocated) or max by (tenant, card) (gputenant_gpu_card_cores_capacity) * 0), \"namespace\", \"空闲\", \"\", \"\"), \"gpu\", \"\\n\", \"tenant\", \"card\")",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "namespace",
+                "desc": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "namespace",
+            "rowField": "gpu",
+            "valueField": "Value",
+            "emptyValue": "null"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "gpu\\namespace": "卡"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "卡",
+                "desc": false
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 90,
+            "gradientMode": "none",
+            "lineWidth": 1,
+            "axisPlacement": "auto"
+          },
+          "max": 100
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "空闲"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#34373d"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xField": "卡",
+        "stacking": "normal",
+        "showValue": "never",
+        "groupWidth": 0.7,
+        "barWidth": 0.8,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
       "id": 5,
       "type": "timeseries",
       "title": "显存分配率",
@@ -490,7 +731,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 16,
         "w": 24,
         "h": 8
       },
@@ -590,7 +831,7 @@
       "collapsed": true,
       "gridPos": {
         "x": 0,
-        "y": 17,
+        "y": 24,
         "w": 24,
         "h": 1
       },
@@ -605,7 +846,7 @@
           },
           "gridPos": {
             "x": 0,
-            "y": 18,
+            "y": 25,
             "w": 12,
             "h": 6
           },
@@ -665,7 +906,7 @@
           },
           "gridPos": {
             "x": 12,
-            "y": 18,
+            "y": 25,
             "w": 6,
             "h": 6
           },
@@ -730,7 +971,7 @@
           },
           "gridPos": {
             "x": 18,
-            "y": 18,
+            "y": 25,
             "w": 6,
             "h": 6
           },

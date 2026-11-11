@@ -1,46 +1,46 @@
-[17:16:29] tenants-namespace  applying
-[17:16:29] tenants-namespace  applied
-[17:16:29] control-plane      applying
-[17:16:54]   ok: tenant-a control plane Ready
-[17:16:55] control-plane      applied
-[17:16:55] admin-kubeconfig   applying
-[17:16:55] admin-kubeconfig   applied
-[17:16:55] api-proxy          applying
-[17:16:55]   proxy tenant-a-api-proxy: 127.0.0.1:16443 -> 172.18.255.200:6443
-[17:16:56] api-proxy          applied
-[17:16:56] kubeconfig         applying
-[17:16:57]   ok: tenant-a apiserver reachable via proxy
-[17:16:57] kubeconfig         applied
-[17:16:57] worker-node        applying
-[17:17:05]   ok: tenant-a-worker systemd running
-[17:17:05] worker-node        applied
-[17:17:05] join               applying
-[17:17:05]   node swap=4194304kB, kubelet failSwapOn=false
-[17:17:07]   ok: tenant-a-worker registered
-[17:17:08] join               applied
-[17:17:08] kube-proxy         applying
-[17:17:13]   ok: kube-proxy rules written
-[17:17:13] kube-proxy         applied
-[17:17:13] calico             applying
-[17:18:14]   ok: node Ready and Calico running
-[17:18:14] calico             applied
-[17:18:15] images             applying
-[17:18:37] images             applied
-[17:18:38] nvml-mock          applying
-[17:18:42] nvml-mock          applied
-[17:18:42] hami               applying
-[17:19:14]   ok: tenant-a-worker nvidia.com/gpu=10
-[17:19:14]   ok: device-plugin container ready
-[17:19:14]   ok: hami-scheduler rolled out
-[17:19:14]   ok: device-plugin migStrategy is none
-[17:19:14] hami               applied
-[17:19:14] admission-policy   applying
-[17:19:20]   ok: admission policy denies GPU Pods that skip the webhook
-[17:19:20] admission-policy   applied
-[17:19:20] monitoring         applying
-[17:20:09]   ok: alert rules loaded: KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
-[17:20:24]   ok: tunnel probe, hami-scheduler and agent signals healthy
-[17:20:24]   ok: no state alert firing
-[17:20:25] monitoring         applied
-tenant tenant-a ready in 3m55s
+[17:26:44] tenants-namespace  applying
+[17:26:44] tenants-namespace  applied
+[17:26:44] control-plane      applying
+[17:27:09]   ok: tenant-a control plane Ready
+[17:27:09] control-plane      applied
+[17:27:09] admin-kubeconfig   applying
+[17:27:09] admin-kubeconfig   applied
+[17:27:10] api-proxy          applying
+[17:27:10]   proxy tenant-a-api-proxy: 127.0.0.1:16443 -> 172.18.255.200:6443
+[17:27:10] api-proxy          applied
+[17:27:10] kubeconfig         applying
+[17:27:10]   ok: tenant-a apiserver reachable via proxy
+[17:27:10] kubeconfig         applied
+[17:27:10] worker-node        applying
+[17:27:17]   ok: tenant-a-worker systemd running
+[17:27:17] worker-node        applied
+[17:27:17] join               applying
+[17:27:17]   node swap=4194304kB, kubelet failSwapOn=false
+[17:27:19]   ok: tenant-a-worker registered
+[17:27:19] join               applied
+[17:27:19] kube-proxy         applying
+[17:27:24]   ok: kube-proxy rules written
+[17:27:25] kube-proxy         applied
+[17:27:25] calico             applying
+[17:28:16]   ok: node Ready and Calico running
+[17:28:16] calico             applied
+[17:28:16] images             applying
+[17:28:38] images             applied
+[17:28:38] nvml-mock          applying
+[17:28:42] nvml-mock          applied
+[17:28:43] hami               applying
+[17:29:14]   ok: tenant-a-worker nvidia.com/gpu=10
+[17:29:14]   ok: device-plugin container ready
+[17:29:14]   ok: hami-scheduler rolled out
+[17:29:14]   ok: device-plugin migStrategy is none
+[17:29:14] hami               applied
+[17:29:14] admission-policy   applying
+[17:29:20]   ok: admission policy denies GPU Pods that skip the webhook
+[17:29:20] admission-policy   applied
+[17:29:20] monitoring         applying
+[17:30:09]   ok: alert rules loaded: KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+[17:30:24]   ok: tunnel probe, hami-scheduler and agent signals healthy
+[17:30:25]   ok: no state alert firing
+[17:30:25] monitoring         applied
+tenant tenant-a ready in 3m40s
 kubeconfig: /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-a/kubeconfig

@@ -1,0 +1,33 @@
+# 2026-11-11T17:43:07+11:00 verify-from-scratch 之后，scripts/demo-teams.sh up（tenant-a: demo-team-a 18000 MiB/35%、demo-team-b 14000 MiB/35%；tenant-b: demo-team-c 8000 MiB/30%）
+$ API /metrics 里按卡的指标
+gputenant_gpu_card_cores_allocated{card="A100 #0",namespace="demo-team-a",tenant="tenant-a"} 35
+gputenant_gpu_card_cores_allocated{card="A100 #0",namespace="demo-team-b",tenant="tenant-a"} 35
+gputenant_gpu_card_cores_allocated{card="T4 #1",namespace="demo-team-c",tenant="tenant-b"} 30
+gputenant_gpu_card_cores_capacity{card="A100 #0",tenant="tenant-a"} 100
+gputenant_gpu_card_cores_capacity{card="T4 #0",tenant="tenant-b"} 100
+gputenant_gpu_card_cores_capacity{card="T4 #1",tenant="tenant-b"} 100
+gputenant_gpu_card_memory_allocated_mib{card="A100 #0",namespace="demo-team-a",tenant="tenant-a"} 18000
+gputenant_gpu_card_memory_allocated_mib{card="A100 #0",namespace="demo-team-b",tenant="tenant-a"} 14000
+gputenant_gpu_card_memory_allocated_mib{card="T4 #1",namespace="demo-team-c",tenant="tenant-b"} 8000
+gputenant_gpu_card_memory_capacity_mib{card="A100 #0",tenant="tenant-a"} 40960
+gputenant_gpu_card_memory_capacity_mib{card="T4 #0",tenant="tenant-b"} 16384
+gputenant_gpu_card_memory_capacity_mib{card="T4 #1",tenant="tenant-b"} 16384
+gputenant_gpu_card_pods{card="A100 #0",namespace="demo-team-a",tenant="tenant-a"} 2
+gputenant_gpu_card_pods{card="A100 #0",namespace="demo-team-b",tenant="tenant-a"} 2
+gputenant_gpu_card_pods{card="T4 #1",namespace="demo-team-c",tenant="tenant-b"} 1
+
+$ 面板 10 的查询在 Prometheus 上的结果
+    tenant-a / A100 #0 | demo-team-a = 18000
+    tenant-a / A100 #0 | demo-team-b = 14000
+    tenant-a / A100 #0 | 空闲 = 8960
+    tenant-b / T4 #0 | 空闲 = 16384
+    tenant-b / T4 #1 | demo-team-c = 8000
+    tenant-b / T4 #1 | 空闲 = 8384
+
+$ 面板 11 的查询在 Prometheus 上的结果
+    tenant-a / A100 #0 | demo-team-a = 35
+    tenant-a / A100 #0 | demo-team-b = 35
+    tenant-a / A100 #0 | 空闲 = 30
+    tenant-b / T4 #0 | 空闲 = 100
+    tenant-b / T4 #1 | demo-team-c = 30
+    tenant-b / T4 #1 | 空闲 = 70

@@ -1,45 +1,45 @@
-[17:21:19] tenants-namespace  skipped
-[17:21:19] control-plane      applying
-[17:21:34]   ok: tenant-b control plane Ready
-[17:21:34] control-plane      applied
-[17:21:34] admin-kubeconfig   applying
-[17:21:34] admin-kubeconfig   applied
-[17:21:34] api-proxy          applying
-[17:21:34]   proxy tenant-b-api-proxy: 127.0.0.1:16444 -> 172.18.255.201:6443
-[17:21:35] api-proxy          applied
-[17:21:35] kubeconfig         applying
-[17:21:35]   ok: tenant-b apiserver reachable via proxy
-[17:21:35] kubeconfig         applied
-[17:21:35] worker-node        applying
-[17:21:41]   ok: tenant-b-worker systemd running
-[17:21:41] worker-node        applied
-[17:21:41] join               applying
-[17:21:42]   node swap=4194304kB, kubelet failSwapOn=false
-[17:21:43]   ok: tenant-b-worker registered
-[17:21:44] join               applied
-[17:21:44] kube-proxy         applying
-[17:21:49]   ok: kube-proxy rules written
-[17:21:49] kube-proxy         applied
-[17:21:49] calico             applying
-[17:22:45]   ok: node Ready and Calico running
-[17:22:45] calico             applied
-[17:22:46] images             applying
-[17:23:17] images             applied
-[17:23:17] nvml-mock          applying
-[17:23:24] nvml-mock          applied
-[17:23:24] hami               applying
-[17:23:48]   ok: tenant-b-worker nvidia.com/gpu=20
-[17:23:48]   ok: device-plugin container ready
-[17:23:53]   ok: hami-scheduler rolled out
-[17:23:53]   ok: device-plugin migStrategy is none
-[17:23:53] hami               applied
-[17:23:53] admission-policy   applying
-[17:23:59]   ok: admission policy denies GPU Pods that skip the webhook
-[17:23:59] admission-policy   applied
-[17:23:59] monitoring         applying
-[17:24:48]   ok: alert rules loaded: KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
-[17:25:03]   ok: tunnel probe, hami-scheduler and agent signals healthy
-[17:25:04]   ok: no state alert firing
-[17:25:04] monitoring         applied
-tenant tenant-b ready in 3m45s
+[17:31:19] tenants-namespace  skipped
+[17:31:19] control-plane      applying
+[17:31:34]   ok: tenant-b control plane Ready
+[17:31:34] control-plane      applied
+[17:31:34] admin-kubeconfig   applying
+[17:31:34] admin-kubeconfig   applied
+[17:31:34] api-proxy          applying
+[17:31:34]   proxy tenant-b-api-proxy: 127.0.0.1:16444 -> 172.18.255.201:6443
+[17:31:35] api-proxy          applied
+[17:31:35] kubeconfig         applying
+[17:31:35]   ok: tenant-b apiserver reachable via proxy
+[17:31:35] kubeconfig         applied
+[17:31:35] worker-node        applying
+[17:31:41]   ok: tenant-b-worker systemd running
+[17:31:41] worker-node        applied
+[17:31:41] join               applying
+[17:31:41]   node swap=4194304kB, kubelet failSwapOn=false
+[17:31:43]   ok: tenant-b-worker registered
+[17:31:43] join               applied
+[17:31:44] kube-proxy         applying
+[17:31:49]   ok: kube-proxy rules written
+[17:31:49] kube-proxy         applied
+[17:31:49] calico             applying
+[17:32:30]   ok: node Ready and Calico running
+[17:32:30] calico             applied
+[17:32:30] images             applying
+[17:32:53] images             applied
+[17:32:53] nvml-mock          applying
+[17:32:57] nvml-mock          applied
+[17:32:57] hami               applying
+[17:33:30]   ok: tenant-b-worker nvidia.com/gpu=20
+[17:33:30]   ok: device-plugin container ready
+[17:33:30]   ok: hami-scheduler rolled out
+[17:33:30]   ok: device-plugin migStrategy is none
+[17:33:30] hami               applied
+[17:33:30] admission-policy   applying
+[17:33:36]   ok: admission policy denies GPU Pods that skip the webhook
+[17:33:36] admission-policy   applied
+[17:33:36] monitoring         applying
+[17:34:27]   ok: alert rules loaded: KonnectivityAgentDisconnected ApiserverToNodePathDown HamiWebhookDown HamiWebhookFailOpen
+[17:34:37]   ok: tunnel probe, hami-scheduler and agent signals healthy
+[17:34:37]   ok: no state alert firing
+[17:34:38] monitoring         applied
+tenant tenant-b ready in 3m19s
 kubeconfig: /home/Zecy/kamaji-hami-lab/kubeconfigs/tenant-b/kubeconfig

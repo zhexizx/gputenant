@@ -1,0 +1,75 @@
+load 15s
+  gputenant_tenant_ready{tenant="tenant-a", job="gputenant", instance="172.18.0.1:18080"} 1x10
+  gputenant_tenant_ready{tenant="tenant-b", job="gputenant", instance="172.18.0.1:18080"} 1x10
+  gputenant_tenant_ready{tenant="tenant-c", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_ready{tenant="tenant-d", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_degraded{tenant="tenant-a", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_degraded{tenant="tenant-b", job="gputenant", instance="172.18.0.1:18080"} 1x10
+  gputenant_tenant_degraded{tenant="tenant-c", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_degraded{tenant="tenant-d", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_steps_done{tenant="tenant-a", job="gputenant", instance="172.18.0.1:18080"} 14x10
+  gputenant_tenant_steps_done{tenant="tenant-b", job="gputenant", instance="172.18.0.1:18080"} 14x10
+  gputenant_tenant_steps_done{tenant="tenant-c", job="gputenant", instance="172.18.0.1:18080"} 8x10
+  gputenant_tenant_steps_done{tenant="tenant-d", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_steps_total{tenant="tenant-a", job="gputenant", instance="172.18.0.1:18080"} 14x10
+  gputenant_tenant_steps_total{tenant="tenant-b", job="gputenant", instance="172.18.0.1:18080"} 14x10
+  gputenant_tenant_steps_total{tenant="tenant-c", job="gputenant", instance="172.18.0.1:18080"} 14x10
+  gputenant_tenant_steps_total{tenant="tenant-d", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_inspect_errors{tenant="tenant-a", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_inspect_errors{tenant="tenant-b", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_inspect_errors{tenant="tenant-c", job="gputenant", instance="172.18.0.1:18080"} 0x10
+  gputenant_tenant_inspect_errors{tenant="tenant-d", job="gputenant", instance="172.18.0.1:18080"} 1x10
+  gputenant_alert_firing{tenant="tenant-b", alertname="ApiserverToNodePathDown", job="gputenant", instance="172.18.0.1:18080"} 1x10
+  gputenant_alert_firing{tenant="tenant-b", alertname="KonnectivityAgentDisconnected", job="gputenant", instance="172.18.0.1:18080"} 1x10
+
+eval instant at 1m (count(gputenant_tenant_ready) - sum(gputenant_tenant_ready)) * on () group_left (ready, total) (count_values("ready", sum(gputenant_tenant_ready)) * on () group_left (total) count_values("total", count(gputenant_tenant_ready)))
+  {ready="2", total="4"} 2
+
+eval instant at 1m max by (tenant, status) (label_replace(max by (tenant) (gputenant_tenant_degraded) == 1, "status", "降级", "", "") or on (tenant) label_replace(max by (tenant) (gputenant_tenant_ready) == 1, "status", "就绪", "", "") or on (tenant) label_replace(max by (tenant) (gputenant_tenant_inspect_errors) > 0, "status", "读取失败", "", "") or on (tenant) label_replace(label_join(count_values by (tenant) ("done", max by (tenant) (gputenant_tenant_steps_done)) * on (tenant) group_left (total) count_values by (tenant) ("total", max by (tenant) (gputenant_tenant_steps_total)), "status", "/", "done", "total"), "status", "未就绪 $1", "status", "(.*)"))
+  {tenant="tenant-a", status="就绪"} 1
+  {tenant="tenant-b", status="降级"} 1
+  {tenant="tenant-c", status="未就绪 8/14"} 1
+  {tenant="tenant-d", status="读取失败"} 1
+
+eval instant at 1m max by (tenant, alertname) (gputenant_alert_firing == 1)
+  {tenant="tenant-b", alertname="ApiserverToNodePathDown"} 1
+  {tenant="tenant-b", alertname="KonnectivityAgentDisconnected"} 1
+
+clear
+load 15s
+  gputenant_tenant_ready{tenant="tenant-a", job="gputenant", instance="172.18.0.1:18080"} 1x10
+  gputenant_tenant_ready{tenant="tenant-b", job="gputenant", instance="172.18.0.1:18080"} 1x10
+
+eval instant at 1m (count(gputenant_tenant_ready) - sum(gputenant_tenant_ready)) * on () group_left (ready, total) (count_values("ready", sum(gputenant_tenant_ready)) * on () group_left (total) count_values("total", count(gputenant_tenant_ready)))
+  {ready="2", total="2"} 0
+
+clear
+load 15s
+  gputenant_gpu_card_memory_capacity_mib{tenant="tenant-a", card="A100 #0", job="gputenant", instance="172.18.0.1:18080"} 40960x10
+  gputenant_gpu_card_memory_capacity_mib{tenant="tenant-b", card="T4 #0", job="gputenant", instance="172.18.0.1:18080"} 16384x10
+  gputenant_gpu_card_memory_capacity_mib{tenant="tenant-b", card="T4 #1", job="gputenant", instance="172.18.0.1:18080"} 16384x10
+  gputenant_gpu_card_memory_allocated_mib{tenant="tenant-a", card="A100 #0", namespace="team-a", job="gputenant", instance="172.18.0.1:18080"} 15000x10
+  gputenant_gpu_card_memory_allocated_mib{tenant="tenant-a", card="A100 #0", namespace="team-b", job="gputenant", instance="172.18.0.1:18080"} 19000x10
+  gputenant_gpu_card_memory_allocated_mib{tenant="tenant-b", card="T4 #0", namespace="team-c", job="gputenant", instance="172.18.0.1:18080"} 6000x10
+  gputenant_gpu_card_cores_capacity{tenant="tenant-a", card="A100 #0", job="gputenant", instance="172.18.0.1:18080"} 100x10
+  gputenant_gpu_card_cores_capacity{tenant="tenant-b", card="T4 #0", job="gputenant", instance="172.18.0.1:18080"} 100x10
+  gputenant_gpu_card_cores_capacity{tenant="tenant-b", card="T4 #1", job="gputenant", instance="172.18.0.1:18080"} 100x10
+  gputenant_gpu_card_cores_allocated{tenant="tenant-a", card="A100 #0", namespace="team-a", job="gputenant", instance="172.18.0.1:18080"} 20x10
+  gputenant_gpu_card_cores_allocated{tenant="tenant-a", card="A100 #0", namespace="team-b", job="gputenant", instance="172.18.0.1:18080"} 35x10
+  gputenant_gpu_card_cores_allocated{tenant="tenant-b", card="T4 #0", namespace="team-c", job="gputenant", instance="172.18.0.1:18080"} 30x10
+
+eval instant at 1m label_join(sum by (tenant, card, namespace) (gputenant_gpu_card_memory_allocated_mib) or label_replace(max by (tenant, card) (gputenant_gpu_card_memory_capacity_mib) - (sum by (tenant, card) (gputenant_gpu_card_memory_allocated_mib) or max by (tenant, card) (gputenant_gpu_card_memory_capacity_mib) * 0), "namespace", "空闲", "", ""), "gpu", "\n", "tenant", "card")
+  {tenant="tenant-a", card="A100 #0", namespace="team-a", gpu="tenant-a\nA100 #0"} 15000
+  {tenant="tenant-a", card="A100 #0", namespace="team-b", gpu="tenant-a\nA100 #0"} 19000
+  {tenant="tenant-a", card="A100 #0", namespace="空闲", gpu="tenant-a\nA100 #0"} 6960
+  {tenant="tenant-b", card="T4 #0", namespace="team-c", gpu="tenant-b\nT4 #0"} 6000
+  {tenant="tenant-b", card="T4 #0", namespace="空闲", gpu="tenant-b\nT4 #0"} 10384
+  {tenant="tenant-b", card="T4 #1", namespace="空闲", gpu="tenant-b\nT4 #1"} 16384
+
+eval instant at 1m label_join(sum by (tenant, card, namespace) (gputenant_gpu_card_cores_allocated) or label_replace(max by (tenant, card) (gputenant_gpu_card_cores_capacity) - (sum by (tenant, card) (gputenant_gpu_card_cores_allocated) or max by (tenant, card) (gputenant_gpu_card_cores_capacity) * 0), "namespace", "空闲", "", ""), "gpu", "\n", "tenant", "card")
+  {tenant="tenant-a", card="A100 #0", namespace="team-a", gpu="tenant-a\nA100 #0"} 20
+  {tenant="tenant-a", card="A100 #0", namespace="team-b", gpu="tenant-a\nA100 #0"} 35
+  {tenant="tenant-a", card="A100 #0", namespace="空闲", gpu="tenant-a\nA100 #0"} 45
+  {tenant="tenant-b", card="T4 #0", namespace="team-c", gpu="tenant-b\nT4 #0"} 30
+  {tenant="tenant-b", card="T4 #0", namespace="空闲", gpu="tenant-b\nT4 #0"} 70
+  {tenant="tenant-b", card="T4 #1", namespace="空闲", gpu="tenant-b\nT4 #1"} 100

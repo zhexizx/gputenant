@@ -1,0 +1,4 @@
+# 2026-11-11T17:43:07+11:00 显存、算力两个“每张卡”查询（标签换行）后重跑 promqltest
+--- PASS: TestDashboard (0.02s)
+PASS
+ok  	promq	0.034s

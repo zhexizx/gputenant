@@ -3,6 +3,7 @@ package tenant
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -231,6 +232,55 @@ func TestParseAllocated(t *testing.T) {
 	for _, s := range []string{"", ";;", "GPU-0,NVIDIA,x,10:;", "garbage"} {
 		if got := parseAllocated(s); len(got) != 0 {
 			t.Errorf("%q: %+v", s, got)
+		}
+	}
+}
+
+func TestUsageFromPerCard(t *testing.T) {
+	ann := `[{"id":"GPU-0","count":10,"devmem":16384,"devcore":100,"type":"NVIDIA T4"},` +
+		`{"id":"GPU-1","index":1,"count":10,"devmem":16384,"devcore":100,"type":"NVIDIA T4"}]`
+	pod := func(ns, name, alloc string, phase corev1.PodPhase) corev1.Pod {
+		return corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: name, Annotations: map[string]string{allocatedAnnotation: alloc}},
+			Status:     corev1.PodStatus{Phase: phase},
+		}
+	}
+	pods := []corev1.Pod{
+		pod("team-b", "b1", "GPU-0,NVIDIA,4000,20:;", corev1.PodRunning),
+		pod("team-a", "a1", "GPU-0,NVIDIA,6000,30:;", corev1.PodRunning),
+		// 两个容器都在 GPU-0：Pod 只算一个，显存和算力相加。
+		pod("team-a", "a2", "GPU-0,NVIDIA,1000,10:;GPU-0,NVIDIA,2000,10:;", corev1.PodRunning),
+		pod("team-b", "b2", "GPU-1,NVIDIA,3000,10:;", corev1.PodPending),
+		// 已结束的 Pod 不占资源；分到登记里没有的卡，只计入总数。
+		pod("team-a", "done", "GPU-1,NVIDIA,9000,50:;", corev1.PodSucceeded),
+		pod("team-c", "ghost", "GPU-9,NVIDIA,500,5:;", corev1.PodRunning),
+		pod("kube-system", "no-gpu", "", corev1.PodRunning),
+	}
+	u, err := usageFrom(ann, pods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.MemAllocMiB != 16500 || u.CoresAllocated != 85 || u.VGPUAllocated != 6 {
+		t.Fatalf("totals: %+v", u)
+	}
+	want := []CardUsage{
+		{Card: "T4 #0", UUID: "GPU-0", MemCapacityMiB: 16384, CoresCapacity: 100, Namespaces: []NamespaceAlloc{
+			{Namespace: "team-a", MemMiB: 9000, Cores: 50, Pods: 2},
+			{Namespace: "team-b", MemMiB: 4000, Cores: 20, Pods: 1},
+		}},
+		{Card: "T4 #1", UUID: "GPU-1", MemCapacityMiB: 16384, CoresCapacity: 100, Namespaces: []NamespaceAlloc{
+			{Namespace: "team-b", MemMiB: 3000, Cores: 10, Pods: 1},
+		}},
+	}
+	if !reflect.DeepEqual(u.Cards, want) {
+		t.Fatalf("cards:\n got %+v\nwant %+v", u.Cards, want)
+	}
+}
+
+func TestShortModel(t *testing.T) {
+	for in, want := range map[string]string{"NVIDIA A100-SXM4-40GB": "A100", "NVIDIA T4": "T4", "Tesla V100": "V100", "": "GPU"} {
+		if got := shortModel(in); got != want {
+			t.Errorf("%q: got %q, want %q", in, got, want)
 		}
 	}
 }

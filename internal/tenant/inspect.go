@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,25 @@ type GPUUsage struct {
 	MemAllocMiB    int64 `json:"memAllocatedMiB"`
 	CoresCapacity  int64 `json:"coresCapacity"` // 每张卡 100
 	CoresAllocated int64 `json:"coresAllocated"`
+	// Cards 按卡拆开，看得出同一张卡上有哪些命名空间（用户）在共享。
+	Cards []CardUsage `json:"cards,omitempty"`
+}
+
+// CardUsage 是一张物理卡的显存和算力容量，以及每个命名空间在这张卡上分到的量。
+type CardUsage struct {
+	Card           string           `json:"card"` // 型号 #序号，例如 "A100 #0"
+	UUID           string           `json:"uuid"`
+	MemCapacityMiB int64            `json:"memCapacityMiB"`
+	CoresCapacity  int64            `json:"coresCapacity"`        // 100
+	Namespaces     []NamespaceAlloc `json:"namespaces,omitempty"` // 按命名空间排序
+}
+
+// NamespaceAlloc 是一个命名空间在某张卡上分到的显存、算力和 Pod 数。
+type NamespaceAlloc struct {
+	Namespace string `json:"namespace"`
+	MemMiB    int64  `json:"memMiB"`
+	Cores     int64  `json:"cores"`
+	Pods      int    `json:"pods"`
 }
 
 // Inspect 汇总租户状态。只读；某一部分读不到时记进 Errors，继续读其他部分。
@@ -99,23 +119,63 @@ func (e *Env) GPUUsage(ctx context.Context) (GPUUsage, error) {
 	if err != nil {
 		return GPUUsage{}, err
 	}
-	u, err := nodeGPUCapacity(n.Annotations[nodeRegisterAnnotation])
-	if err != nil {
-		return GPUUsage{}, err
-	}
 	pods, err := k.Clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{FieldSelector: "spec.nodeName=" + e.Cfg.Worker()})
 	if err != nil {
 		return GPUUsage{}, err
 	}
-	for _, p := range pods.Items {
+	return usageFrom(n.Annotations[nodeRegisterAnnotation], pods.Items)
+}
+
+// usageFrom 用节点的 HAMi 登记注解和节点上的 Pod 算出容量和分配量，总数和按卡拆开的都算。
+// 分到不在登记里的卡（例如卡被摘掉后还没删的 Pod）只计入总数。
+func usageFrom(nodeAnn string, pods []corev1.Pod) (GPUUsage, error) {
+	u, err := nodeGPUCapacity(nodeAnn)
+	if err != nil {
+		return GPUUsage{}, err
+	}
+	byUUID := map[string]int{}
+	for i, c := range u.Cards {
+		byUUID[c.UUID] = i
+	}
+	type key struct {
+		card int
+		ns   string
+	}
+	alloc := map[key]*NamespaceAlloc{}
+	for _, p := range pods {
 		if !holdsGPU(&p) {
 			continue
 		}
+		counted := map[int]bool{} // 一个 Pod 在同一张卡上有多个容器时只算一个 Pod
 		for _, d := range parseAllocated(p.Annotations[allocatedAnnotation]) {
 			u.VGPUAllocated++
 			u.MemAllocMiB += d.MemMiB
 			u.CoresAllocated += d.Cores
+			i, ok := byUUID[d.UUID]
+			if !ok {
+				continue
+			}
+			k := key{i, p.Namespace}
+			a := alloc[k]
+			if a == nil {
+				a = &NamespaceAlloc{Namespace: p.Namespace}
+				alloc[k] = a
+			}
+			a.MemMiB += d.MemMiB
+			a.Cores += d.Cores
+			if !counted[i] {
+				counted[i] = true
+				a.Pods++
+			}
 		}
+	}
+	for k, a := range alloc {
+		u.Cards[k.card].Namespaces = append(u.Cards[k.card].Namespaces, *a)
+	}
+	for i := range u.Cards {
+		sort.Slice(u.Cards[i].Namespaces, func(x, y int) bool {
+			return u.Cards[i].Namespaces[x].Namespace < u.Cards[i].Namespaces[y].Namespace
+		})
 	}
 	return u, nil
 }
@@ -139,20 +199,35 @@ func nodeGPUCapacity(ann string) (GPUUsage, error) {
 		return GPUUsage{}, errors.New("node has no " + nodeRegisterAnnotation + " annotation (HAMi device plugin not registered)")
 	}
 	var devs []struct {
-		Count   int64 `json:"count"`
-		DevMem  int64 `json:"devmem"`
-		DevCore int64 `json:"devcore"`
+		ID      string `json:"id"`
+		Type    string `json:"type"`
+		Count   int64  `json:"count"`
+		DevMem  int64  `json:"devmem"`
+		DevCore int64  `json:"devcore"`
 	}
 	if err := json.Unmarshal([]byte(ann), &devs); err != nil {
 		return GPUUsage{}, fmt.Errorf("%s: %w", nodeRegisterAnnotation, err)
 	}
 	var u GPUUsage
-	for _, d := range devs {
+	for i, d := range devs {
 		u.VGPUCapacity += d.Count
 		u.MemCapacityMiB += d.DevMem
 		u.CoresCapacity += d.DevCore
+		u.Cards = append(u.Cards, CardUsage{Card: fmt.Sprintf("%s #%d", shortModel(d.Type), i), UUID: d.ID, MemCapacityMiB: d.DevMem, CoresCapacity: d.DevCore})
 	}
 	return u, nil
+}
+
+// shortModel 把 HAMi 登记的型号缩短，便于在看板上显示："NVIDIA A100-SXM4-40GB" -> "A100"，"NVIDIA T4" -> "T4"。
+func shortModel(t string) string {
+	t = strings.TrimPrefix(strings.TrimPrefix(t, "NVIDIA "), "Tesla ")
+	if i := strings.Index(t, "-"); i > 0 {
+		t = t[:i]
+	}
+	if t == "" {
+		return "GPU"
+	}
+	return t
 }
 
 // DeviceAlloc 是分配给某个容器的一份 vGPU。
