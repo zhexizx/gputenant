@@ -1,12 +1,13 @@
 {
   "uid": "gputenant",
   "title": "gputenant 多租户 GPU",
+  "description": "GPU 由 nvml-mock 模拟。GPU 数字是 HAMi 的分配率（已分配给 Pod 的份额 / 节点登记的容量），不是利用率。租户状态由 gputenant API 每 30 秒用 Check 重新计算。颜色只表示异常：正常为灰色，未就绪、降级、告警、读取失败或分配率达到 85% 时为红色。",
   "tags": [
     "gputenant"
   ],
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "refresh": "15s",
   "time": {
     "from": "now-1h",
@@ -14,32 +15,18 @@
   },
   "panels": [
     {
-      "id": 100,
-      "type": "text",
-      "title": "",
-      "gridPos": {
-        "x": 0,
-        "y": 0,
-        "w": 24,
-        "h": 2
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "**GPU 由 nvml-mock 模拟。** 下面的 GPU 数字是 HAMi 的**分配率**（已分配给 Pod 的份额 / 节点登记的容量），不是利用率。租户状态由 gputenant API 每 30 秒用 `Check` 重新计算。"
-      }
-    },
-    {
       "id": 1,
       "type": "stat",
       "title": "租户就绪",
+      "description": "就绪的租户 / 全部租户。有租户未就绪时变红。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "x": 0,
-        "y": 2,
-        "w": 6,
+        "y": 0,
+        "w": 8,
         "h": 4
       },
       "targets": [
@@ -49,28 +36,23 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(gputenant_tenant_ready)",
-          "legendFormat": "就绪"
-        },
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "count(gputenant_tenant_ready)",
-          "legendFormat": "总数"
+          "expr": "(count(gputenant_tenant_ready) - sum(gputenant_tenant_ready)) * on () group_left (ready, total) (count_values(\"ready\", sum(gputenant_tenant_ready)) * on () group_left (total) count_values(\"total\", count(gputenant_tenant_ready)))",
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "displayName": "${__field.labels.ready}/${__field.labels.total}",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#8e8e8e",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
               }
             ]
           }
@@ -83,22 +65,25 @@
             "lastNotNull"
           ]
         },
-        "textMode": "value_and_name",
-        "colorMode": "value"
+        "textMode": "name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
       }
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "降级的租户",
+      "title": "降级租户",
+      "description": "开通完成，但有状态告警 firing 的租户数。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "x": 6,
-        "y": 2,
-        "w": 4,
+        "x": 8,
+        "y": 0,
+        "w": 8,
         "h": 4
       },
       "targets": [
@@ -109,17 +94,18 @@
             "uid": "prometheus"
           },
           "expr": "sum(gputenant_tenant_degraded) or vector(0)",
-          "legendFormat": ""
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
+          "decimals": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#8e8e8e",
                 "value": null
               },
               {
@@ -137,21 +123,25 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background"
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
       }
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "firing 的告警",
+      "title": "告警",
+      "description": "所有租户的 Prometheus 里 firing 的告警数。明细在折叠的“运维”行里。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "x": 10,
-        "y": 2,
-        "w": 4,
+        "x": 16,
+        "y": 0,
+        "w": 8,
         "h": 4
       },
       "targets": [
@@ -162,17 +152,18 @@
             "uid": "prometheus"
           },
           "expr": "sum(gputenant_alerts_firing) or vector(0)",
-          "legendFormat": ""
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
+          "decimals": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#8e8e8e",
                 "value": null
               },
               {
@@ -190,422 +181,26 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background"
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
       }
     },
     {
       "id": 4,
-      "type": "stat",
-      "title": "运行中的任务",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 14,
-        "y": 2,
-        "w": 4,
-        "h": 4
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_tasks_running",
-          "legendFormat": ""
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        }
-      }
-    },
-    {
-      "id": 5,
-      "type": "stat",
-      "title": "状态数据延迟",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 18,
-        "y": 2,
-        "w": 6,
-        "h": 4
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "time() - gputenant_refresh_timestamp_seconds",
-          "legendFormat": ""
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 90
-              },
-              {
-                "color": "red",
-                "value": 300
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "value"
-      }
-    },
-    {
-      "id": 6,
-      "type": "bargauge",
-      "title": "vGPU 分配率",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 6,
-        "w": 8,
-        "h": 7
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_gpu_vgpu_allocated / gputenant_gpu_vgpu_capacity",
-          "legendFormat": "{{tenant}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.7
-              },
-              {
-                "color": "red",
-                "value": 0.9
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        }
-      }
-    },
-    {
-      "id": 7,
-      "type": "bargauge",
-      "title": "显存分配率",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 8,
-        "y": 6,
-        "w": 8,
-        "h": 7
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_gpu_memory_allocated_mib / gputenant_gpu_memory_capacity_mib",
-          "legendFormat": "{{tenant}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.7
-              },
-              {
-                "color": "red",
-                "value": 0.9
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        }
-      }
-    },
-    {
-      "id": 8,
-      "type": "bargauge",
-      "title": "算力分配率",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 16,
-        "y": 6,
-        "w": 8,
-        "h": 7
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_gpu_cores_allocated / gputenant_gpu_cores_capacity",
-          "legendFormat": "{{tenant}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.7
-              },
-              {
-                "color": "red",
-                "value": 0.9
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        }
-      }
-    },
-    {
-      "id": 9,
-      "type": "timeseries",
-      "title": "显存分配率（随时间）",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 13,
-        "w": 12,
-        "h": 8
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_gpu_memory_allocated_mib / gputenant_gpu_memory_capacity_mib",
-          "legendFormat": "{{tenant}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1,
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 10,
-      "type": "timeseries",
-      "title": "开通进度（完成的步骤）",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 13,
-        "w": 12,
-        "h": 8
-      },
-      "targets": [
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "max(gputenant_tenant_steps_total)",
-          "legendFormat": "总步骤"
-        },
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "gputenant_tenant_steps_done",
-          "legendFormat": "{{tenant}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "min": 0,
-          "decimals": 0,
-          "custom": {
-            "lineWidth": 2,
-            "lineInterpolation": "stepAfter"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "总步骤"
-            },
-            "properties": [
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "fill": "dash",
-                  "dash": [
-                    8,
-                    6
-                  ]
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 1
-              },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "text"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 11,
       "type": "table",
-      "title": "租户状态",
+      "title": "租户",
+      "description": "显存、算力是 HAMi 的分配率，达到 85% 变红。未就绪（开通中或出了故障）的租户显示完成的步骤数。告警为“—”表示租户未就绪或读不到告警。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "x": 0,
-        "y": 21,
-        "w": 14,
-        "h": 8
+        "y": 4,
+        "w": 24,
+        "h": 5
       },
       "targets": [
         {
@@ -614,8 +209,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max by (tenant) (gputenant_tenant_ready)",
-          "legendFormat": "ready",
+          "expr": "max by (tenant, status) (label_replace(max by (tenant) (gputenant_tenant_degraded) == 1, \"status\", \"降级\", \"\", \"\") or on (tenant) label_replace(max by (tenant) (gputenant_tenant_ready) == 1, \"status\", \"就绪\", \"\", \"\") or on (tenant) label_replace(max by (tenant) (gputenant_tenant_inspect_errors) > 0, \"status\", \"读取失败\", \"\", \"\") or on (tenant) label_replace(label_join(count_values by (tenant) (\"done\", max by (tenant) (gputenant_tenant_steps_done)) * on (tenant) group_left (total) count_values by (tenant) (\"total\", max by (tenant) (gputenant_tenant_steps_total)), \"status\", \"/\", \"done\", \"total\"), \"status\", \"未就绪 $1\", \"status\", \"(.*)\"))",
           "instant": true,
           "format": "table"
         },
@@ -625,8 +219,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max by (tenant) (gputenant_tenant_degraded)",
-          "legendFormat": "degraded",
+          "expr": "max by (tenant) (gputenant_gpu_memory_allocated_mib / gputenant_gpu_memory_capacity_mib)",
           "instant": true,
           "format": "table"
         },
@@ -636,8 +229,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max by (tenant) (gputenant_tenant_steps_done)",
-          "legendFormat": "steps",
+          "expr": "max by (tenant) (gputenant_gpu_cores_allocated / gputenant_gpu_cores_capacity)",
           "instant": true,
           "format": "table"
         },
@@ -647,41 +239,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max by (tenant) (gputenant_gpu_vgpu_allocated)",
-          "legendFormat": "vgpu_alloc",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "refId": "E",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "max by (tenant) (gputenant_gpu_vgpu_capacity)",
-          "legendFormat": "vgpu_cap",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "refId": "F",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "max by (tenant) (gputenant_alerts_firing)",
-          "legendFormat": "alerts",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "refId": "G",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "max by (tenant) (gputenant_tenant_inspect_errors)",
-          "legendFormat": "read_errors",
           "instant": true,
           "format": "table"
         }
@@ -695,39 +253,245 @@
           "options": {
             "excludeByName": {
               "Time": true,
-              "__name__": true,
-              "instance": true,
-              "job": true
+              "Value #A": true
+            },
+            "indexByName": {
+              "tenant": 0,
+              "status": 1,
+              "Value #B": 2,
+              "Value #C": 3,
+              "Value #D": 4
             },
             "renameByName": {
-              "Value #A": "就绪",
-              "Value #B": "降级",
-              "Value #C": "完成步骤",
-              "Value #D": "vGPU 已分配",
-              "Value #E": "vGPU 容量",
-              "Value #F": "firing 告警",
-              "Value #G": "读取失败项"
+              "tenant": "租户",
+              "status": "状态",
+              "Value #B": "显存分配",
+              "Value #C": "算力分配",
+              "Value #D": "告警"
             }
           }
         }
       ],
       "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#8e8e8e",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "租户"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "tenant-a": {
+                        "color": "#5794F2",
+                        "index": 0
+                      },
+                      "tenant-b": {
+                        "color": "#B877D9",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "状态"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "降级": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "读取失败": {
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^未就绪",
+                      "result": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(显存分配|算力分配)$"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8e8e8e",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.85
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "告警"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "noValue",
+                "value": "—"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8e8e8e",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "租户",
+            "desc": false
+          }
+        ]
       }
     },
     {
-      "id": 12,
-      "type": "table",
-      "title": "firing 的告警",
+      "id": 5,
+      "type": "timeseries",
+      "title": "显存分配率",
+      "description": "HAMi 已分配的显存 / 登记的显存。虚线是 85% 阈值。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "x": 14,
-        "y": 21,
-        "w": 10,
+        "x": 0,
+        "y": 9,
+        "w": 24,
         "h": 8
       },
       "targets": [
@@ -737,121 +501,291 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "gputenant_alert_firing == 1",
-          "legendFormat": "",
-          "instant": true,
-          "format": "table"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value": true,
-              "__name__": true,
-              "instance": true,
-              "job": true
-            }
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "options": {
-        "footer": {
-          "show": false
-        }
-      }
-    },
-    {
-      "id": 13,
-      "type": "timeseries",
-      "title": "任务平均耗时（本 API 实例启动以来）",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 29,
-        "w": 12,
-        "h": 7
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum by (op, result) (gputenant_task_duration_seconds_sum) / sum by (op, result) (gputenant_task_duration_seconds_count)",
-          "legendFormat": "{{op}} {{result}}"
+          "expr": "max by (tenant) (gputenant_gpu_memory_allocated_mib / gputenant_gpu_memory_capacity_mib)",
+          "legendFormat": "{{tenant}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "percentunit",
           "min": 0,
-          "custom": {
-            "drawStyle": "points",
-            "pointSize": 6
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 14,
-      "type": "stat",
-      "title": "任务结果（本 API 实例启动以来）",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 29,
-        "w": 12,
-        "h": 7
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+          "max": 1,
+          "color": {
+            "mode": "palette-classic"
           },
-          "expr": "sum by (op, result) (gputenant_tasks_total)",
-          "legendFormat": "{{op}} {{result}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "showPoints": "never",
+            "lineInterpolation": "stepAfter",
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "transparent",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.85
               }
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tenant-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tenant-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "textMode": "value_and_name"
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
+    },
+    {
+      "id": 6,
+      "type": "row",
+      "title": "运维",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 7,
+          "type": "table",
+          "title": "firing 的告警",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 18,
+            "w": 12,
+            "h": 6
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (tenant, alertname) (gputenant_alert_firing == 1)",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true
+                },
+                "indexByName": {
+                  "tenant": 0,
+                  "alertname": 1
+                },
+                "renameByName": {
+                  "tenant": "租户",
+                  "alertname": "告警"
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true,
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 8,
+          "type": "stat",
+          "title": "任务平均耗时（本 API 实例启动以来）",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 18,
+            "w": 6,
+            "h": 6
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (op, result) (gputenant_task_duration_seconds_sum) / sum by (op, result) (gputenant_task_duration_seconds_count)",
+              "legendFormat": "{{op}} {{result}}",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "decimals": 0,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "#8e8e8e"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": ".* failure$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "value_and_name",
+            "colorMode": "value",
+            "graphMode": "none",
+            "orientation": "horizontal"
+          }
+        },
+        {
+          "id": 9,
+          "type": "stat",
+          "title": "任务结果（本 API 实例启动以来）",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 18,
+            "w": 6,
+            "h": 6
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (op, result) (gputenant_tasks_total)",
+              "legendFormat": "{{op}} {{result}}",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "#8e8e8e"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": ".* failure$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "value_and_name",
+            "colorMode": "value",
+            "graphMode": "none",
+            "orientation": "horizontal"
+          }
+        }
+      ]
     }
   ],
   "annotations": {

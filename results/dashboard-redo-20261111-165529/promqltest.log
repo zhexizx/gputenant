@@ -1,0 +1,4 @@
+# 2026-11-11T16:56:28+11:00 状态改为“未就绪 x/y”后重跑 promqltest
+--- PASS: TestDashboard (0.02s)
+PASS
+ok  	promq	0.026s

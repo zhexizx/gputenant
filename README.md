@@ -13,7 +13,7 @@
 
 ![Grafana 看板](docs/images/dashboard.png)
 
-*Grafana 看板（`scripts/dashboard.sh up`）：两个租户都就绪，没有告警；条形图是 HAMi 的分配率，图里的 GPU Pod 是演示用的。*
+*Grafana 看板（`scripts/dashboard.sh up`）：只回答三个问题——平台有没有问题、每个租户的 GPU 分出去多少、出问题时是哪个租户哪条告警。颜色只表示异常：tenant-a 显存分配 88%，超过 85% 阈值，所以变红。图里的 GPU Pod 是演示用的。*
 
 ## 主要结果
 
@@ -125,7 +125,7 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 | REST API | API 被 `kill -9` 后重启：旧任务 404，半成品租户报 not ready，`gputenant_tenant_ready=0`；再次提交从断点续做 | `results/api-20261109-095837/` |
 | 镜像和 GHCR | 本地构建的镜像能从零开通、删除租户；`v0.1.0` 的 release workflow 通过 | `results/image-20261109-100723/`、release run 42546815733 |
 | CI e2e | GitHub Actions 上通过 | e2e run 42545273247 |
-| Grafana 看板 | 15 个面板的查询逐个在真实数据上验证过，包括故障时的降级和告警；在浏览器里看过。11/09 截图时发现“租户状态”表没有按租户合并（每个指标各占一行），已修复 | `results/dashboard-20261109-101717/` |
+| Grafana 看板 | 11/11 重做为 5 个面板加一个折叠的“运维”行。查询用 promqltest 喂假数据验证了就绪、降级、未就绪 8/14、读取失败四种状态（含变异检查），又在真实 Prometheus 上逐个跑过；红色的渲染用临时调低阈值的副本看过。旧版 15 个面板的验证见 11/09 | `results/dashboard-promql-20261111-163159/`、`results/dashboard-redo-20261111-165529/`、`results/dashboard-20261109-101717/` |
 | 开通耗时 | 见[主要结果](#主要结果) | `results/measure-x-20261109-140325/` |
 
 ## 设计
@@ -151,6 +151,8 @@ WSL + Docker Desktop 上，本机访问不到宿主机网络里的端口，所�
 - `/metrics` 导出租户状态、开通耗时和结果、GPU 容量和已分配量（从 HAMi 注解计算）、各租户 firing 的告警。租户状态由后台每 30 秒刷新成快照；读不到告警时不导出告警数，免得被当成 0。
 - 告警不经 apiserver 代理查询：那要经过 Konnectivity 隧道，隧道断开时正好查不到。改为在节点内 curl 租户 Prometheus 的 ClusterIP。
 - 看板用的 Prometheus 和 Grafana 用 docker compose 跑，只抓取 API 的 `/metrics`（`deploy/`）。看板显示的是 **分配率**（HAMi 分出去了多少），不是利用率。
+- 看板只回答三个问题：平台有没有问题、每个租户分出去多少、出问题时是哪个租户哪条告警。颜色只表示异常（正常灰色，未就绪、降级、告警、读取失败、分配率 ≥ 85% 红色），每个租户在所有面板里用同一个颜色；任务耗时和结果放在默认折叠的“运维”行。
+- “2/2”“未就绪 8/14”这类文字由 PromQL 生成：`count_values` 把数字放进标签，`label_join` 拼起来，Grafana 只负责显示。状态写“未就绪”而不是“开通中”：节点挂掉时步骤数也会下降，指标区分不了这两种情况。
 
 ## 局限
 
